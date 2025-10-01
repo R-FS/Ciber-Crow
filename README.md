@@ -21,7 +21,7 @@ Logging & Reporting: Store historical data for performance trends and diagnostic
 
 Modular Architecture: Designed for easy expansion into security and vulnerability modules.
 
-Cross-Platform Support: Runs on Windows, Linux, and macOS environments.
+Cross-Platform Support: Runs on Windows, Linux, and macOS environments from Web.
 
 # Technologies Used
 
