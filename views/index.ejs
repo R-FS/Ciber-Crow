@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || 'Teste de Velocidade' %></title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <%- include('partials/header') %>
+    
+    <div class="container">
+        <div class="speed-test">
+            <h1>Teste de Velocidade</h1>
+            
+            <button id="startButton" class="test-button">
+                <i class="fas fa-play"></i>
+            </button>
+            <p class="button-label">Clique para começar o teste</p>
+            
+            <div id="testStatus" class="test-status" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span id="statusText">Testando sua conexão...</span>
+            </div>
+            
+            <div class="progress-container">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+            
+            <div id="results" class="results">
+                <!-- Os resultados serão exibidos aqui -->
+            </div>
+        </div>
+    </div>
+
+    <%- include('partials/footer') %>
+    
+    <script src="/js/script.js"></script>
+</body>
+</html>

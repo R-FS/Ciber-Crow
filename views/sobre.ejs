@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <%- include('partials/header') %>
+    
+    <div class="container">
+        <div class="content-box">
+            <h1>Sobre o Ciber Crow</h1>
+            
+            <div class="about-content">
+                <p>O Ciber Crow é uma ferramenta de teste de velocidade de internet desenvolvida para fornecer resultados precisos e confiáveis sobre a qualidade da sua conexão.</p>
+                
+                <h2>Como Funciona</h2>
+                <p>Nosso sistema realiza testes de velocidade medindo:</p>
+                <ul class="feature-list">
+                    <li><i class="fas fa-signal"></i> <strong>Ping/Latência</strong>: Tempo de resposta da sua conexão</li>
+                    <li><i class="fas fa-download"></i> <strong>Download</strong>: Velocidade de recebimento de dados</li>
+                    <li><i class="fas fa-upload"></i> <strong>Upload</strong>: Velocidade de envio de dados</li>
+                    <li><i class="fas fa-network-wired"></i> <strong>Jitter</strong>: Variação na latência da conexão</li>
+                </ul>
+                
+                <h2>Por que usar nosso teste?</h2>
+                <div class="features-grid">
+                    <div class="feature">
+                        <i class="fas fa-bolt"></i>
+                        <h3>Rápido</h3>
+                        <p>Teste sua conexão em segundos</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-shield-alt"></i>
+                        <h3>Seguro</h3>
+                        <p>Não armazenamos seus dados pessoais</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-mobile-alt"></i>
+                        <h3>Responsivo</h3>
+                        <p>Funciona em qualquer dispositivo</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Preciso</h3>
+                        <p>Resultados confiáveis e detalhados</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cta-section">
+                <a href="/" class="cta-button">Testar Minha Velocidade</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/main.js"></script>
+</body>
+</html>

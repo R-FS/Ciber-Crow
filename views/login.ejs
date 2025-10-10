@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || 'Teste de Velocidade' %></title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <div class="container auth-container">
+        <div id="loginBox" class="auth-box">
+            <h1>Login</h1>
+            <form id="loginForm" action="/login" method="POST">
+                <div class="form-group">
+                    <label for="username">Utilizador</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <button type="submit" class="submit-btn">Entrar</button>
+            </form>
+        </div>
+
+        <div id="signupBox" class="auth-box" style="display: none;">
+            <h1>Registar</h1>
+        <form id="signupForm" action="/signup" method="POST">
+            <div class="form-group">
+                <label for="username">Utilizador</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm-password">Confirmar Password</label>
+                <input type="password" id="confirm-password" name="confirm-password" required>
+            </div>
+            
+            <button type="submit" class="submit-btn">Registar</button>
+        </form>
+    </div>
+    </div>
+    <div class="auth-toggle">
+        <button id="showLogin" class="auth-toggle-btn active">Login</button>
+        <button id="showSignup" class="auth-toggle-btn">Registar</button>
+    </div>
+
+    <%- include('partials/footer') %>
+
+    <script src="/js/login.js"></script>
+</body>
+</html>
