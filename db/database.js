@@ -35,7 +35,7 @@ function initializeDatabase() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     )`);
-}
+} 
 
 // Função para executar consultas com parâmetros
 function query(sql, params = []) {

@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const showSignupBtn = document.getElementById('showSignup');
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
-    const API_BASE_URL = window.location.origin;
+    const API_BASE_URL = window.location.origin + '/api/auth';
 
     // Mostrar formulário de login
     function showLogin() {
@@ -51,33 +51,48 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleLogin(event) {
         event.preventDefault();
         
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
+        const email = document.getElementById('username').value; // Este campo deve conter o email
+        const password = document.getElementById('password').value;
+        
+        // Validação básica
+        if (!email || !password) {
+            showError(loginForm, 'Por favor, preencha todos os campos');
+            return;
+        }
         
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+            const response = await fetch(`${API_BASE_URL}/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password }),
-                credentials: 'include' // Importante para enviar/armazenar cookies
+                body: JSON.stringify({ 
+                    email: email, 
+                    password: password 
+                }),
+                credentials: 'include'
             });
             
             const data = await response.json();
             
             if (!response.ok) {
-                throw new Error(data.error || 'Erro ao fazer login');
+                throw new Error(data.error || 'Credenciais inválidas');
             }
             
-            // Armazenar tokens e redirecionar
-            localStorage.setItem('accessToken', data.accessToken);
-            localStorage.setItem('refreshToken', data.refreshToken);
-            
-            // Redirecionar para a página inicial ou painel
-            window.location.href = '/';
+            // Armazenar tokens e informações do usuário
+            if (data.accessToken && data.refreshToken) {
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                // Redirecionar para a página inicial
+                window.location.href = '/';
+            } else {
+                throw new Error('Dados de autenticação inválidos');
+            }
             
         } catch (error) {
+            console.error('Erro no login:', error);
             showError(loginForm, error.message || 'Erro ao fazer login. Verifique suas credenciais.');
         }
     }
@@ -89,22 +104,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const username = document.getElementById('signup-username').value;
         const email = document.getElementById('signup-email').value;
         const password = document.getElementById('signup-password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
+        const confirmPassword = document.getElementById('signup-confirm-password').value;
         
         // Validação básica do lado do cliente
+        if (!username || !email || !password || !confirmPassword) {
+            showError(signupForm, 'Por favor, preencha todos os campos');
+            return;
+        }
+        
         if (password !== confirmPassword) {
-            showError(document.getElementById('confirm-password'), 'As senhas não coincidem');
+            showError(document.getElementById('signup-confirm-password'), 'As senhas não coincidem');
+            return;
+        }
+        
+        if (password.length < 6) {
+            showError(document.getElementById('signup-password'), 'A senha deve ter pelo menos 6 caracteres');
             return;
         }
         
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+            const response = await fetch(`${API_BASE_URL}/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ username, email, password }),
-                credentials: 'include' // Importante para enviar/armazenar cookies
+                credentials: 'include'
             });
             
             const data = await response.json();
@@ -113,18 +138,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(data.error || 'Erro ao criar conta');
             }
             
-            // Login automático após registro
-            await handleLogin({
-                preventDefault: () => {},
-                target: {
-                    elements: {
-                        'login-email': { value: email },
-                        'login-password': { value: password }
-                    }
-                }
-            });
+            // Mostrar mensagem de sucesso e alternar para o formulário de login
+            alert('Conta criada com sucesso! Faça login para continuar.');
+            showLogin();
             
         } catch (error) {
+            console.error('Erro no registro:', error);
             showError(signupForm, error.message || 'Erro ao criar conta. Tente novamente.');
         }
     }

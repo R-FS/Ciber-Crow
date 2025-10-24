@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const os = require('os');
 const cors = require('cors');
-const speedTest = require('speedtest-net');
+const SpeedTest = require('fast-speedtest-api');
 const cookieParser = require('cookie-parser');
 const app = express();
 const port = process.env.PORT || 3000;
@@ -165,32 +165,29 @@ app.post('/api/upload', express.raw({
     });
 });
 
-// Rota para teste de velocidade completo (opcional, usando speedtest-net)
-app.get('/api/speedtest', (req, res) => {
-    const test = speedTest({
-        maxTime: 10000, // 10 segundos máximo por teste
-        serverId: null, // Usa o servidor mais próximo automaticamente
-        acceptLicense: true,
-        acceptGdpr: true
-    });
-    
-    test.on('data', data => {
+// Rota para teste de velocidade
+app.get('/api/speedtest', async (req, res) => {
+    try {
+        const speedTest = new SpeedTest({
+            token: 'YOUR_FAST_SPEEDTEST_API_TOKEN', // Opcional
+            verbose: false,
+            timeout: 10000,
+            https: true,
+            urlCount: 5,
+            bufferSize: 8,
+            unit: SpeedTest.UNITS.Mbps
+        });
+
+        const speed = await speedTest.getSpeed();
         res.json({
-            ping: data.ping.latency,
-            download: data.download.bandwidth * 8, // Convertendo para bits
-            upload: data.upload.bandwidth * 8,    // Convertendo para bits
-            server: data.server.host,
-            timestamp: Date.now()
+            download: speed,
+            upload: speed, // Note: This is a limitation of fast-speedtest-api
+            ping: 0 // Not provided by this package
         });
-    });
-    
-    test.on('error', err => {
-        console.error('Erro no teste de velocidade:', err);
-        res.status(500).json({ 
-            error: 'Erro ao realizar teste de velocidade',
-            details: err.message 
-        });
-    });
+    } catch (err) {
+        console.error('Speed test error:', err);
+        res.status(500).json({ error: 'Speed test failed', details: err.message });
+    }
 });
 
 // Servir o frontend
