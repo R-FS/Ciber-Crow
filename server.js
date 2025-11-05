@@ -10,6 +10,7 @@ const port = process.env.PORT || 3000;
 
 // Importar rotas
 const authRoutes = require('./routes/authRoutes');
+const speedTestRoutes = require('./routes/speedTestRoutes');
 
 // Configuração do EJS
 app.set('view engine', 'ejs');
@@ -64,6 +65,12 @@ const getNetworkInfo = () => {
 
 // Rotas de API
 app.use('/api/auth', authRoutes);
+app.use('/api/speedtest', speedTestRoutes);
+
+// Rota para a página de histórico de testes
+app.get('/test-history', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'test-history.html'));
+});
 
 // Rotas de visualização
 app.get('/', (req, res) => {

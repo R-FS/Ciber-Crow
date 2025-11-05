@@ -41,38 +41,97 @@ document.addEventListener('DOMContentLoaded', () => {
         return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(2)}s`;
     };
 
+    // Função para salvar os resultados do teste no servidor
+    const saveTestResults = async (results) => {
+        try {
+            const response = await fetch('/api/speedtest/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
+                },
+                body: JSON.stringify({
+                    downloadSpeed: results.download,
+                    uploadSpeed: results.upload,
+                    ping: results.ping,
+                    jitter: results.jitter,
+                    serverName: results.server,
+                    serverLocation: 'Local',
+                    ipAddress: '', // Será preenchido pelo servidor
+                    isp: '' // Será preenchido pelo servidor
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.warn('Não foi possível salvar os resultados:', error);
+                return false;
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Erro ao salvar resultados:', error);
+            return false;
+        }
+    };
+
     // Função para atualizar os resultados
-    const updateResults = (results) => {
+    const updateResults = async (results) => {
         const { download, upload, ping, jitter, server, timestamp } = results;
         
-        resultsDiv.innerHTML = `
-            <div class="result-item">
-                <span class="result-label"><i class="fas fa-download"></i> Download:</span>
-                <span class="result-value">${formatSpeed(download)}</span>
-            </div>
-            <div class="result-item">
-                <span class="result-label"><i class="fas fa-upload"></i> Upload:</span>
-                <span class="result-value">${formatSpeed(upload)}</span>
-            </div>
-            <div class="result-item">
-                <span class="result-label"><i class="fas fa-signal"></i> Ping:</span>
-                <span class="result-value">${ping} ms</span>
-            </div>
-            ${jitter ? `
-            <div class="result-item">
-                <span class="result-label"><i class="fas fa-wave-square"></i> Jitter:</span>
-                <span class="result-value">${jitter} ms</span>
-            </div>` : ''}
-            ${server ? `
-            <div class="result-item">
-                <span class="result-label"><i class="fas fa-server"></i> Servidor:</span>
-                <span class="result-value">${server}</span>
-            </div>` : ''}
-            <div class="result-item">
-                <span class="result-label"><i class="fas fa-clock"></i> Horário:</span>
-                <span class="result-value">${new Date(timestamp).toLocaleString()}</span>
-            </div>
-        `;
+        // Tenta salvar os resultados no servidor
+        const isLoggedIn = !!localStorage.getItem('accessToken');
+        let saveMessage = '';
+        
+        if (isLoggedIn) {
+            const saved = await saveTestResults(results);
+            saveMessage = saved 
+                ? '<div class="save-success"><i class="fas fa-check"></i> Resultados salvos no seu histórico</div>'
+                : '<div class="save-warning"><i class="fas fa-exclamation-triangle"></i> Não foi possível salvar os resultados</div>';
+        } else {
+            saveMessage = '<div class="save-info"><i class="fas fa-info-circle"></i> <a href="/login">Faça login</a> para salvar seu histórico de testes</div>';
+        }
+        
+        // Create results HTML
+        const resultsHTML = `
+            <div class="test-results">
+                <h3>Resultados do Teste</h3>
+                <div class="result-item">
+                    <span class="result-label"><i class="fas fa-download"></i> Download:</span>
+                    <span class="result-value">${formatSpeed(download)}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label"><i class="fas fa-upload"></i> Upload:</span>
+                    <span class="result-value">${formatSpeed(upload)}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label"><i class="fas fa-signal"></i> Ping:</span>
+                    <span class="result-value">${ping} ms</span>
+                </div>
+                ${jitter ? `
+                <div class="result-item">
+                    <span class="result-label"><i class="fas fa-wave-square"></i> Jitter:</span>
+                    <span class="result-value">${jitter} ms</span>
+                </div>` : ''}
+                ${server ? `
+                <div class="result-item">
+                    <span class="result-label"><i class="fas fa-server"></i> Servidor:</span>
+                    <span class="result-value">${server}</span>
+                </div>` : ''}
+                <div class="result-item">
+                    <span class="result-label"><i class="fas fa-clock"></i> Horário:</span>
+                    <span class="result-value">${new Date(timestamp).toLocaleString()}</span>
+                </div>
+                ${saveMessage}
+                <div class="history-button-container" style="margin-top: 20px;">
+                    <a href="/test-history" class="history-button">
+                        <i class="fas fa-history"></i> Ver Histórico de Testes
+                    </a>
+                </div>
+            </div>`;
+            
+        // Update the results div
+        resultsDiv.innerHTML = resultsHTML;
     };
 
     // Função para medir o ping (média de várias tentativas)
@@ -206,11 +265,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!response.ok) throw new Error('Falha no upload');
                 
                 const result = await response.json();
-                totalBits += result.received * 8; // bits
-                totalTime += result.duration / 1000; // converter para segundos
+                const bitsTransferred = size * 8; // Tamanho em bits
+                const durationInSeconds = (performance.now() - startTime) / 1000; // Duração em segundos
+                const speedBps = bitsTransferred / durationInSeconds; // Velocidade em bits por segundo
                 
-                // Atualiza o progresso
-                updateTestProgress('upload', i + 1, fileSizes.length, result.speed);
+                totalBits += bitsTransferred;
+                totalTime += durationInSeconds;
+                
+                // Atualiza o progresso com a velocidade atual
+                updateTestProgress('upload', i + 1, fileSizes.length, speedBps);
                 
             } catch (error) {
                 console.error(`Erro no teste de upload (${formatSize(size)}):`, error);
@@ -220,7 +283,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        return totalTime > 0 ? totalBits / totalTime : 0;
+        // Calcula a velocidade média de upload em bits por segundo
+        const averageSpeedBps = totalTime > 0 ? totalBits / totalTime : 0;
+        return averageSpeedBps;
     };
     
     // Função auxiliar para formatar tamanhos
@@ -293,15 +358,18 @@ document.addEventListener('DOMContentLoaded', () => {
             resultsDiv.innerHTML = '<div class="test-status"><i class="fas fa-upload"></i> Testando velocidade de upload...</div>';
             const uploadSpeed = await measureUploadSpeed();
             
-            // 4. Exibe os resultados finais
-            updateResults({
+            // 4. Prepara e exibe os resultados finais
+            const testResults = {
                 download: downloadSpeed,
                 upload: uploadSpeed,
                 ping: ping,
                 jitter: jitter,
                 server: window.location.hostname,
                 timestamp: Date.now()
-            });
+            };
+            
+            // Atualiza a interface com os resultados
+            await updateResults(testResults);
             
         } catch (error) {
             console.error('Erro no teste de velocidade:', error);
@@ -327,15 +395,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Inicialização
-    resultsDiv.innerHTML = `
-        <div class="welcome-message">
-            <h3>Teste de Velocidade</h3>
-            <p>Clique no botão.</p>
-            <p>O teste irá medir:</p>
-            <ul>
-                <li><i class="fas fa-signal"></i> Latência (Ping)</li>
-                <li><i class="fas fa-download"></i> Velocidade de Download</li>
-                <li><i class="fas fa-upload"></i> Velocidade de Upload</li>
-            </ul>
-        </div>`;
+    const showWelcomeMessage = () => {
+        resultsDiv.innerHTML = `
+            <div class="welcome-message">
+                <h3>Teste de Velocidade</h3>
+                <p>Clique no botão para iniciar o teste de velocidade.</p>
+                <p>O teste irá medir:</p>
+                <ul>
+                    <li><i class="fas fa-signal"></i> Latência (Ping)</li>
+                    <li><i class="fas fa-download"></i> Velocidade de Download</li>
+                    <li><i class="fas fa-upload"></i> Velocidade de Upload</li>
+                </ul>
+                <div class="history-button-container">
+                    <a href="/test-history" class="history-button">
+                        <i class="fas fa-history"></i> Ver Histórico de Testes
+                    </a>
+                </div>
+            </div>`;
+    };
+    
+    // Show initial welcome message
+    showWelcomeMessage();
 });
