@@ -18,6 +18,83 @@
     --spacing-xl: 3rem;
     
     /* Bordas */
+
+/* History Button */
+.history-button-container {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.history-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(30, 144, 255, 0.3);
+}
+
+.history-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(30, 144, 255, 0.4);
+}
+
+.history-button i {
+    font-size: 1rem;
+}
+
+/* Save status messages */
+.save-success,
+.save-warning,
+.save-info {
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.save-success {
+    background-color: rgba(46, 204, 113, 0.15);
+    color: #27ae60;
+    border-left: 3px solid #27ae60;
+}
+
+.save-warning {
+    background-color: rgba(241, 196, 15, 0.15);
+    color: #f39c12;
+    border-left: 3px solid #f39c12;
+}
+
+.save-info {
+    background-color: rgba(52, 152, 219, 0.15);
+    color: #3498db;
+    border-left: 3px solid #3498db;
+}
+
+.save-success a,
+.save-warning a,
+.save-info a {
+    color: currentColor;
+    text-decoration: underline;
+    font-weight: 500;
+}
+
+.save-success i,
+.save-warning i,
+.save-info i {
+    font-size: 1.1em;
+}
     --border-radius-sm: 5px;
     --border-radius-md: 10px;
     --border-radius-lg: 15px;

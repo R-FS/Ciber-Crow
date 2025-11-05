@@ -66,6 +66,27 @@ async function createTables(connection) {
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         `);
+
+        // Tabela para armazenar os testes de velocidade
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS speed_tests (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                download_speed DECIMAL(15, 2) NOT NULL COMMENT 'Velocidade de download em Mbps',
+                upload_speed DECIMAL(15, 2) NOT NULL COMMENT 'Velocidade de upload em Mbps',
+                ping DECIMAL(10, 2) NOT NULL COMMENT 'Latência em ms',
+                jitter DECIMAL(10, 2) COMMENT 'Variação de latência em ms',
+                server_name VARCHAR(255) COMMENT 'Nome do servidor de teste',
+                server_location VARCHAR(255) COMMENT 'Localização do servidor',
+                ip_address VARCHAR(45) COMMENT 'Endereço IP do usuário',
+                isp VARCHAR(255) COMMENT 'Provedor de Internet',
+                test_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_user_test_date (user_id, test_date)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
     } catch (err) {
         console.error('Erro ao configurar o banco de dados');
         throw err;
