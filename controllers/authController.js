@@ -19,10 +19,16 @@ const register = async (req, res) => {
 
         const { username, email, password } = req.body;
 
-        // Verificar se o usuário já existe
-        const existingUser = await query('SELECT * FROM users WHERE email = ? OR username = ?', [email, username]);
-        if (existingUser.length > 0) {
-            return res.status(400).json({ error: 'Email ou nome de usuário já está em uso' });
+        // Verificar se o email já está em uso
+        const existingEmail = await query('SELECT * FROM users WHERE email = ?', [email]);
+        if (existingEmail.length > 0) {
+            return res.status(400).json({ error: 'Este email já está em uso' });
+        }
+
+        // Verificar se o nome de usuário já está em uso
+        const existingUsername = await query('SELECT * FROM users WHERE username = ?', [username]);
+        if (existingUsername.length > 0) {
+            return res.status(400).json({ error: 'Este nome de usuário já está em uso' });
         }
 
         // Criptografar a senha
@@ -35,8 +41,19 @@ const register = async (req, res) => {
             [username, email, hashedPassword]
         );
 
+        // Buscar o usuário recém-criado para obter o ID gerado
+        const [newUser] = await query('SELECT id, username, email FROM users WHERE id = ?', [result.lastID]);
+        
+        if (!newUser) {
+            throw new Error('Falha ao criar o usuário');
+        }
+
         // Gerar tokens
-        const user = { id: result.id, username, email };
+        const user = { 
+            id: newUser.id, 
+            username: newUser.username, 
+            email: newUser.email 
+        };
         const accessToken = generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
 
@@ -52,7 +69,7 @@ const register = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Erro ao registrar usuário:', error);
+        console.error('Erro ao registrar usuário');
         res.status(500).json({ error: 'Erro ao processar o registro' });
     }
 };
@@ -88,7 +105,7 @@ const login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Erro ao fazer login:', error);
+        console.error('Erro ao processar login');
         res.status(500).json({ error: 'Erro ao processar o login' });
     }
 };
@@ -129,7 +146,7 @@ const refreshToken = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Erro ao atualizar token:', error);
+        console.error('Erro ao atualizar token');
         res.status(500).json({ error: 'Erro ao atualizar token de acesso' });
     }
 };
@@ -159,15 +176,43 @@ async function generateRefreshToken(user) {
 // Fazer logout
 const logout = async (req, res) => {
     try {
-        const { refreshToken } = req.body;
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
         
-        // Remover o token de atualização do banco de dados
-        await run('DELETE FROM refresh_tokens WHERE token = ?', [refreshToken]);
-        
-        res.json({ message: 'Logout realizado com sucesso' });
+        if (!token) {
+            return res.status(400).json({ error: 'Token de autenticação não fornecido' });
+        }
+
+        // Verificar se o token é válido e obter o ID do usuário
+        jwt.verify(token, JWT_SECRET, async (err, user) => {
+            if (err) {
+                // Token inválido ou expirado, mas continuamos com o logout
+                // Não é necessário fazer nada aqui, apenas continuar o fluxo
+            }
+            
+            // Se tivermos um usuário válido, remover todos os tokens de atualização dele
+            if (user && user.id) {
+                try {
+                    await run('DELETE FROM refresh_tokens WHERE user_id = ?', [user.id]);
+                } catch (dbError) {
+                    console.error('Erro ao remover tokens de atualização');
+                    // Não interrompemos o fluxo em caso de erro ao remover tokens
+                }
+            }
+            
+            res.status(200).json({ 
+                success: true, 
+                message: 'Logout realizado com sucesso' 
+            })
+        });
+
     } catch (error) {
-        console.error('Erro ao fazer logout:', error);
-        res.status(500).json({ error: 'Erro ao processar o logout' });
+        console.error('Erro ao processar logout');
+        // Em produção, retornamos sucesso mesmo em caso de erro
+        res.status(200).json({ 
+            success: true, 
+            message: 'Sessão finalizada' 
+        });
     }
 };
 
@@ -180,7 +225,7 @@ const getProfile = async (req, res) => {
         }
         res.json(users[0]);
     } catch (error) {
-        console.error('Erro ao buscar perfil:', error);
+        console.error('Erro ao buscar perfil do usuário');
         res.status(500).json({ error: 'Erro ao buscar perfil do usuário' });
     }
 };

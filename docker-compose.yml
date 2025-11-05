@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  db:
+    image: mariadb:10.11
+    container_name: mariadb-container
+    environment:
+      MYSQL_ROOT_PASSWORD: CyberCrowDB
+      MYSQL_DATABASE: cibercrow
+      MYSQL_USER: cibercrow
+      MYSQL_PASSWORD: CyberCrowDB
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:

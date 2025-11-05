@@ -1,70 +1,118 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const mysql = require('mysql2/promise');
+require('dotenv').config();
 
-// Caminho para o arquivo do banco de dados
-const dbPath = path.join(__dirname, 'cibercrow.db');
+// Configuração da conexão com o banco de dados
+const dbConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'CyberCrowDB',
+    database: 'cibercrow', // Nome do banco de dados sem a extensão .db
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    ssl: false,
+    multipleStatements: false
+};
 
-// Conectar ao banco de dados
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Erro ao conectar ao banco de dados:', err.message);
-    } else {
-        console.log('Conectado ao banco de dados SQLite');
-        initializeDatabase();
+// Criar pool de conexões
+const pool = mysql.createPool(dbConfig);
+
+// Testar a conexão e inicializar o banco de dados
+async function initializeDatabase() {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        
+        // Selecionar o banco de dados
+        await connection.query('USE cibercrow');
+        
+        // Criar tabelas se não existirem
+        await createTables(connection);
+    } catch (err) {
+        console.error('Erro ao conectar ao banco de dados');
+        throw err;
+    } finally {
+        if (connection) connection.release();
     }
-});
+}
 
-// Inicializar o banco de dados
-function initializeDatabase() {
-    // Tabela de usuários
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+// Criar tabelas necessárias
+async function createTables(connection) {
+    try {
+        // Criar banco de dados se não existir
+        await connection.query('CREATE DATABASE IF NOT EXISTS `cibercrow`');
+        await connection.query('USE `cibercrow`');
+        
+        // Tabela de usuários
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
 
-    // Tabela de tokens de atualização
-    db.run(`CREATE TABLE IF NOT EXISTS refresh_tokens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        token TEXT NOT NULL,
-        expires_at DATETIME NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-    )`);
-} 
+        // Tabela de tokens de atualização
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS refresh_tokens (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                token TEXT NOT NULL,
+                expires_at DATETIME NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
+    } catch (err) {
+        console.error('Erro ao configurar o banco de dados');
+        throw err;
+    }
+}
 
 // Função para executar consultas com parâmetros
-function query(sql, params = []) {
-    return new Promise((resolve, reject) => {
-        db.all(sql, params, (err, rows) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(rows);
-            }
-        });
-    });
+async function query(sql, params = []) {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [rows] = await connection.execute(sql, params);
+        return rows;
+    } catch (err) {
+        console.error('Erro na consulta ao banco de dados');
+        throw err;
+    } finally {
+        if (connection) connection.release();
+    }
 }
 
 // Função para executar comandos (INSERT, UPDATE, DELETE)
-function run(sql, params = []) {
-    return new Promise((resolve, reject) => {
-        db.run(sql, params, function(err) {
-            if (err) {
-                reject(err);
-            } else {
-                resolve({ id: this.lastID, changes: this.changes });
-            }
-        });
-    });
+async function run(sql, params = []) {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [result] = await connection.execute(sql, params);
+        return {
+            lastID: result.insertId,
+            changes: result.affectedRows
+        };
+    } catch (err) {
+        console.error('Erro na execução da operação no banco de dados');
+        throw err;
+    } finally {
+        if (connection) connection.release();
+    }
 }
 
+// Inicializar a conexão com o banco de dados
+initializeDatabase().catch(err => {
+    console.error('Falha ao inicializar o banco de dados:', err);
+    process.exit(1);
+});
+
 module.exports = {
-    db,
+    pool,
     query,
     run
-};
+}
