@@ -68,8 +68,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/speedtest', speedTestRoutes);
 
 // Rota para a página de histórico de testes
-app.get('/test-history', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'test-history.html'));
+app.get('/historico', (req, res) => {
+    res.render('history', { 
+        title: 'Histórico de Testes - Ciber Crow',
+        description: 'Visualize o histórico de testes de velocidade realizados.'
+    });
 });
 
 // Rotas de visualização
