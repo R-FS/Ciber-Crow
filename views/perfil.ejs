@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - Ciber Crow</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+</head>
+<body>
+    <%- include('partials/header') %>
+    
+    <div class="container">
+        <div class="profile-container">
+            <div class="profile-header">
+                <div class="avatar-container">
+                    <img src="<%= user.avatar || '/images/default-avatar.png' %>" alt="Foto de perfil" class="profile-avatar" id="avatarPreview">
+                    <input type="file" id="avatarUpload" class="avatar-upload" accept="image/*">
+                </div>
+                <h1 class="profile-username"><%= user.username %></h1>
+                <p class="profile-email"><%= user.email %></p>
+                <p>Membro desde: <%= new Date(user.createdAt).toLocaleDateString('pt-BR') %></p>
+            </div>
+            
+            <div class="profile-section">
+                <h2>Informações Pessoais</h2>
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="username">Nome de Usuário</label>
+                        <input type="text" id="username" name="username" class="form-control" value="<%= user.username %>" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" name="email" class="form-control" value="<%= user.email %>" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bio">Biografia</label>
+                        <textarea id="bio" name="bio" class="form-control" rows="4"><%= user.bio || '' %></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn">Salvar Alterações</button>
+                </form>
+            </div>
+            
+            <div class="profile-section">
+                <h2>Alterar Senha</h2>
+                <form id="passwordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Senha Atual</label>
+                        <input type="password" id="currentPassword" name="currentPassword" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newPassword">Nova Senha</label>
+                        <input type="password" id="newPassword" name="newPassword" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmar Nova Senha</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
+                    </div>
+                    
+                    <button type="submit" class="btn">Alterar Senha</button>
+                </form>
+            </div>
+            
+            <div class="profile-section text-center">
+                <h2>Configurações da Conta</h2>
+                <button id="logoutBtn" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+                
+                <div class="mt-4">
+                    <button id="deleteAccountBtn" class="btn btn-secondary">
+                        <i class="fas fa-trash-alt"></i> Excluir Conta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <%- include('partials/footer') %>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos do DOM
+            const avatarPreview = document.getElementById('avatarPreview');
+            const avatarUpload = document.getElementById('avatarUpload');
+            const profileForm = document.getElementById('profileForm');
+            const passwordForm = document.getElementById('passwordForm');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+            
+            // Upload de avatar
+            if (avatarPreview && avatarUpload) {
+                avatarPreview.addEventListener('click', function() {
+                    avatarUpload.click();
+                });
+                
+                avatarUpload.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            avatarPreview.src = event.target.result;
+                            // Aqui você pode adicionar o código para enviar a imagem para o servidor
+                            // uploadAvatar(file);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+            
+            // Atualização do perfil
+            if (profileForm) {
+                profileForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = {
+                        username: document.getElementById('username').value,
+                        email: document.getElementById('email').value,
+                        bio: document.getElementById('bio').value
+                    };
+                    
+                    try {
+                        const response = await fetch('/api/auth/update-profile', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                            },
+                            body: JSON.stringify(formData)
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            alert('Perfil atualizado com sucesso!');
+                            // Atualiza os dados do usuário no localStorage
+                            const user = JSON.parse(localStorage.getItem('user'));
+                            Object.assign(user, formData);
+                            localStorage.setItem('user', JSON.stringify(user));
+                            
+                            // Atualiza o nome de usuário no cabeçalho
+                            const usernameDisplay = document.querySelector('#username-display');
+                            if (usernameDisplay) {
+                                usernameDisplay.textContent = user.username || 'Conta';
+                            }
+                            
+                            // Recarrega a página para atualizar os dados
+                            window.location.reload();
+                        } else {
+                            throw new Error(data.message || 'Erro ao atualizar perfil');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao atualizar perfil:', error);
+                        alert('Erro ao atualizar perfil: ' + error.message);
+                    }
+                });
+            }
+            
+            // Alteração de senha
+            if (passwordForm) {
+                passwordForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const currentPassword = document.getElementById('currentPassword').value;
+                    const newPassword = document.getElementById('newPassword').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    
+                    if (newPassword !== confirmPassword) {
+                        alert('As senhas não coincidem!');
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch('/api/auth/change-password', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                            },
+                            body: JSON.stringify({
+                                currentPassword,
+                                newPassword
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            alert('Senha alterada com sucesso!');
+                            passwordForm.reset();
+                        } else {
+                            throw new Error(data.message || 'Erro ao alterar senha');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao alterar senha:', error);
+                        alert('Erro ao alterar senha: ' + error.message);
+                    }
+                });
+            }
+            
+            // Logout
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async function() {
+                    try {
+                        const response = await fetch('/api/auth/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                            },
+                            credentials: 'include'
+                        });
+                        
+                        if (response.ok) {
+                            // Limpa os dados de autenticação
+                            localStorage.removeItem('accessToken');
+                            localStorage.removeItem('refreshToken');
+                            localStorage.removeItem('user');
+                            
+                            // Redireciona para a página inicial
+                            window.location.href = '/';
+                        } else {
+                            throw new Error('Falha ao fazer logout');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao fazer logout:', error);
+                        alert('Ocorreu um erro ao fazer logout. Por favor, tente novamente.');
+                    }
+                });
+            }
+            
+            // Excluir conta
+            if (deleteAccountBtn) {
+                deleteAccountBtn.addEventListener('click', function() {
+                    if (confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
+                        // Aqui você pode adicionar o código para excluir a conta
+                        // deleteAccount();
+                        alert('Funcionalidade de exclusão de conta será implementada em breve.');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

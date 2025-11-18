@@ -7,18 +7,37 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'seu_outro_segredo_
 
 // Middleware para verificar o token JWT
 const authenticateToken = (req, res, next) => {
+    // Tenta obter o token do cabeçalho de autorização
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    let token = authHeader && authHeader.split(' ')[1];
+
+    // Se não encontrou no cabeçalho, tenta obter do cookie
+    if (!token && req.cookies && req.cookies.token) {
+        token = req.cookies.token;
+    }
 
     if (!token) {
-        return res.status(401).json({ error: 'Token de autenticação não fornecido' });
+        // Se for uma requisição de API, retorna erro JSON
+        if (req.path.startsWith('/api/')) {
+            return res.status(401).json({ error: 'Token de autenticação não fornecido' });
+        }
+        // Se for uma requisição de página, redireciona para o login
+        return res.redirect(`/login?redirect=${encodeURIComponent(req.originalUrl)}`);
     }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
-            return res.status(403).json({ error: 'Token inválido ou expirado' });
+            // Se o token estiver inválido, limpa o cookie e redireciona
+            res.clearCookie('token');
+            if (req.path.startsWith('/api/')) {
+                return res.status(403).json({ error: 'Token inválido ou expirado' });
+            }
+            return res.redirect(`/login?redirect=${encodeURIComponent(req.originalUrl)}`);
         }
+        
+        // Token válido, adiciona o usuário à requisição
         req.user = user;
+        res.locals.user = user; // Disponibiliza o usuário para as views
         next();
     });
 };

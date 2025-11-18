@@ -41,38 +41,100 @@ document.addEventListener('DOMContentLoaded', () => {
         return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(2)}s`;
     };
 
-    // Função para salvar os resultados do teste no servidor
-    const saveTestResults = async (results) => {
+    // Função para tentar renovar o token de acesso
+    const refreshAccessToken = async () => {
         try {
-            const response = await fetch('/api/speedtest/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
-                },
-                body: JSON.stringify({
-                    downloadSpeed: results.download,
-                    uploadSpeed: results.upload,
-                    ping: results.ping,
-                    jitter: results.jitter,
-                    serverName: results.server,
-                    serverLocation: 'Local',
-                    ipAddress: '', // Será preenchido pelo servidor
-                    isp: '' // Será preenchido pelo servidor
-                })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                console.warn('Não foi possível salvar os resultados:', error);
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) {
+                console.warn('Nenhum token de atualização encontrado');
                 return false;
             }
-            
-            return true;
+
+            const response = await fetch('/api/auth/refresh-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken }),
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('accessToken', data.accessToken);
+                return true;
+            } else {
+                console.warn('Falha ao renovar o token de acesso');
+                // Redirecionar para login se o refresh token também estiver inválido
+                if (response.status === 403) {
+                    window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                }
+                return false;
+            }
         } catch (error) {
-            console.error('Erro ao salvar resultados:', error);
+            console.error('Erro ao renovar token:', error);
             return false;
         }
+    };
+
+    // Função para salvar os resultados do teste no servidor
+    const saveTestResults = async (results) => {
+        const accessToken = localStorage.getItem('accessToken');
+        
+        // Se não houver token, não tenta salvar mas não é um erro
+        if (!accessToken) {
+            console.log('Usuário não autenticado. Os resultados não serão salvos.');
+            return { success: false, requiresLogin: true };
+        }
+
+        const makeRequest = async (isRetry = false) => {
+            try {
+                const response = await fetch('/api/speedtest/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        downloadSpeed: results.download,
+                        uploadSpeed: results.upload,
+                        ping: results.ping,
+                        jitter: results.jitter,
+                        serverName: results.server,
+                        serverLocation: 'Local',
+                        ipAddress: '',
+                        isp: ''
+                    })
+                });
+
+                // Se o token expirou, tenta renovar e fazer a requisição novamente
+                if (response.status === 403 && !isRetry) {
+                    const refreshed = await refreshAccessToken();
+                    if (refreshed) {
+                        return makeRequest(true); // Tenta novamente com o novo token
+                    }
+                }
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    console.warn('Não foi possível salvar os resultados:', error.message || 'Erro desconhecido');
+                    return { 
+                        success: false, 
+                        requiresLogin: response.status === 401 || response.status === 403,
+                        message: error.message || 'Erro ao salvar os resultados'
+                    };
+                }
+                
+                return { success: true };
+            } catch (error) {
+                console.error('Erro ao salvar resultados:', error);
+                return { 
+                    success: false, 
+                    requiresLogin: false,
+                    message: 'Erro de conexão ao salvar os resultados'
+                };
+            }
+        };
+
+        return await makeRequest();
     };
 
     // Função para atualizar os resultados
@@ -370,6 +432,36 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Atualiza a interface com os resultados
             await updateResults(testResults);
+            
+            // Tenta salvar os resultados se o usuário estiver autenticado
+            const saveResult = await saveTestResults(testResults);
+            
+            if (saveResult.requiresLogin) {
+                // Mostra mensagem que o teste não foi salvo por falta de autenticação
+                const saveStatus = document.createElement('div');
+                saveStatus.className = 'save-status';
+                saveStatus.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <p>Faça <a href="/login?redirect=${encodeURIComponent(window.location.pathname)}" class="alert-link">login</a> para salvar seus resultados no histórico.</p>
+                            <small>Você pode fazer o teste sem salvar.</small>
+                        </div>
+                    </div>
+                `;
+                resultsDiv.appendChild(saveStatus);
+            } else if (!saveResult.success) {
+                // Mostra mensagem de erro ao salvar
+                const saveStatus = document.createElement('div');
+                saveStatus.className = 'save-status';
+                saveStatus.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Não foi possível salvar os resultados: ${saveResult.message || 'Erro desconhecido'}</p>
+                    </div>
+                `;
+                resultsDiv.appendChild(saveStatus);
+            }
             
         } catch (error) {
             console.error('Erro no teste de velocidade:', error);

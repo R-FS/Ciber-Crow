@@ -36,4 +36,7 @@ router.post('/logout', authController.logout);
 // Rota protegida para teste
 router.get('/profile', authenticateToken, authController.getProfile);
 
+// Rota para verificar autenticação
+router.get('/check', authenticateToken, authController.checkAuth);
+
 module.exports = router;

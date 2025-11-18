@@ -8,9 +8,10 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Importar rotas
+// Importar rotas e middlewares
 const authRoutes = require('./routes/authRoutes');
 const speedTestRoutes = require('./routes/speedTestRoutes');
+const { authenticateToken } = require('./middleware/auth');
 
 // Configuração do EJS
 app.set('view engine', 'ejs');
@@ -67,11 +68,22 @@ const getNetworkInfo = () => {
 app.use('/api/auth', authRoutes);
 app.use('/api/speedtest', speedTestRoutes);
 
-// Rota para a página de histórico de testes
-app.get('/historico', (req, res) => {
-    res.render('history', { 
+// Rota para a página de perfil (protegida)
+app.get('/perfil', authenticateToken, (req, res) => {
+    // O usuário está autenticado (verificado pelo middleware)
+    // Você pode acessar os dados do usuário em req.user
+    res.render('perfil', { 
+        title: 'Meu Perfil',
+        user: req.user // O middleware já adiciona o usuário ao req
+    });
+});
+
+// Rota para a página de histórico de testes (protegida)
+app.get('/test-history', authenticateToken, (req, res) => {
+    res.render('test-history', { 
         title: 'Histórico de Testes - Ciber Crow',
-        description: 'Visualize o histórico de testes de velocidade realizados.'
+        description: 'Visualize o histórico de testes de velocidade realizados.',
+        user: req.user // Passa os dados do usuário para a view
     });
 });
 

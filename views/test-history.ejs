@@ -1,311 +1,264 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-   <% include('partials/header') %>
+   <link rel="stylesheet" href="/css/styles.css">
+   <title><%= title %></title>
+   <meta name="description" content="<%= description %>">
 </head>
 <body>
+    <%- include('partials/header') %>
+    
     <div class="container">
-        <h1><i class="fas fa-history"></i> Histórico de Testes</h1>
-        
-        <div class="controls">
-            <button id="loadHistory"><i class="fas fa-sync"></i> Carregar Histórico</button>
-            <select id="limitSelect">
-                <option value="5">Últimos 5 testes</option>
-                <option value="10" selected>Últimos 10 testes</option>
-                <option value="20">Últimos 20 testes</option>
-                <option value="50">Últimos 50 testes</option>
-                <option value="0">Todos os testes</option>
-            </select>
-        </div>
+        <div class="speed-test">
+            <h1 class="title"><i class="fas fa-history"></i> Histórico de Testes</h1>
+            <p class="subtitle">Visualize o histórico dos seus testes de velocidade</p>
+            
+            <div id="authRequired" class="save-info" style="display: none;">
+                <i class="fas fa-info-circle"></i>
+                <div class="alert-content">
+                    <p>Você precisa estar autenticado para acessar seu histórico de testes.</p>
+                    <div class="button-group" style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <a href="/login?redirect=<%= encodeURIComponent('/test-history') %>" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Fazer Login
+                        </a>
+                        <a href="/register" class="btn btn-outline">
+                            <i class="fas fa-user-plus"></i> Criar Conta
+                        </a>
+                    </div>
+                </div>
+            </div>
 
-        <div class="stats-container" id="statsContainer">
-            <!-- Stats will be loaded here -->
-        </div>
+            <div id="authenticatedContent" style="display: none;">
+                <div class="form-group" style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                    <button id="loadHistory" class="btn btn-primary">
+                        <i class="fas fa-sync"></i> Atualizar
+                    </button>
+                    <select id="limitSelect" class="form-control" style="max-width: 200px;">
+                        <option value="5">Últimos 5 testes</option>
+                        <option value="10" selected>Últimos 10 testes</option>
+                        <option value="20">Últimos 20 testes</option>
+                        <option value="50">Últimos 50 testes</option>
+                        <option value="0">Todos os testes</option>
+                    </select>
+                </div>
 
-        <div id="loading" class="loading" style="display: none;">
-            <i class="fas fa-spinner fa-spin"></i> Carregando...
-        </div>
+                <div id="loading" class="loading" style="display: none; text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <i class="fas fa-spinner fa-spin"></i> Carregando histórico...
+                </div>
 
-        <div id="historyTable">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Download (Mbps)</th>
-                        <th>Upload (Mbps)</th>
-                        <th>Ping (ms)</th>
-                        <th>Jitter (ms)</th>
-                        <th>Servidor</th>
-                    </tr>
-                </thead>
-                <tbody id="historyBody">
-                    <!-- Data will be loaded here -->
-                </tbody>
-            </table>
+                <div class="card" style="background-color: rgba(10, 25, 47, 0.5); border-radius: 10px; padding: 1.5rem; margin-top: 1.5rem;">
+                    <div class="table-responsive">
+                        <table class="table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                            <thead>
+                                <tr>
+                                    <th style="padding: 1rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: var(--primary-color);">
+                                        <i class="far fa-calendar"></i> Data
+                                    </th>
+                                    <th style="padding: 1rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: var(--primary-color);">
+                                        <i class="fas fa-download"></i> Download
+                                    </th>
+                                    <th style="padding: 1rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: var(--primary-color);">
+                                        <i class="fas fa-upload"></i> Upload
+                                    </th>
+                                    <th style="padding: 1rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: var(--primary-color);">
+                                        <i class="fas fa-tachometer-alt"></i> Ping
+                                    </th>
+                                    <th style="padding: 1rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: var(--primary-color);">
+                                        <i class="fas fa-wave-square"></i> Jitter
+                                    </th>
+                                    <th style="padding: 1rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: var(--primary-color);">
+                                        <i class="fas fa-server"></i> Servidor
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody" style="color: var(--text-light);">
+                                <!-- Dados serão carregados aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const loadBtn = document.getElementById('loadHistory');
-            const limitSelect = document.getElementById('limitSelect');
-            const historyBody = document.getElementById('historyBody');
+        // Função para formatar a data
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'Data inválida';
+            
+            const options = { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            };
+            return date.toLocaleDateString('pt-BR', options);
+        }
+        
+        // Função para formatar a velocidade
+        function formatSpeed(speed) {
+            if (speed === null || speed === undefined) return 'N/A';
+            const speedNum = parseFloat(speed);
+            return !isNaN(speedNum) ? speedNum.toFixed(2) + ' Mbps' : 'N/A';
+        }
+        
+        // Função para formatar o ping/jitter
+        function formatPing(ping) {
+            if (ping === null || ping === undefined) return 'N/A';
+            const pingNum = parseFloat(ping);
+            return !isNaN(pingNum) ? Math.round(pingNum) + ' ms' : 'N/A';
+        }
+        
+        // Função para carregar o histórico
+        async function loadHistory() {
+            const limit = document.getElementById('limitSelect')?.value || '10';
             const loadingDiv = document.getElementById('loading');
-            const statsContainer = document.getElementById('statsContainer');
-
-            // Format date to local string
-            const formatDate = (dateString) => {
-                const options = { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric',
-                    hour: '2-digit', 
-                    minute: '2-digit'
-                };
-                return new Date(dateString).toLocaleString('pt-BR', options);
-            };
-
-            // Format speed with 2 decimal places
-            const formatSpeed = (speed) => {
-                return parseFloat(speed).toFixed(2);
-            };
-
-            // Function to refresh access token
-            const refreshAccessToken = async () => {
-                try {
-                    const refreshToken = localStorage.getItem('refreshToken');
-                    if (!refreshToken) {
-                        throw new Error('No refresh token available');
-                    }
-                    
-                    const response = await fetch('/api/auth/refresh', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ refreshToken }),
-                        credentials: 'include'
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to refresh token');
-                    }
-                    
-                    const data = await response.json();
-                    localStorage.setItem('accessToken', data.accessToken);
-                    if (data.refreshToken) {
-                        localStorage.setItem('refreshToken', data.refreshToken);
-                    }
-                    return data.accessToken;
-                } catch (error) {
-                    console.error('Error refreshing token:', error);
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('refreshToken');
-                    window.location.href = '/login';
-                    throw error;
-                }
-            };
-
-            // Load test history
-            const loadHistory = async (retry = true) => {
-                const limit = limitSelect.value;
+            const historyBody = document.getElementById('historyBody');
+            
+            if (!loadingDiv || !historyBody) {
+                console.error('Elementos necessários não encontrados no DOM');
+                return;
+            }
+            
+            try {
                 loadingDiv.style.display = 'block';
                 historyBody.innerHTML = '';
-                statsContainer.innerHTML = '';
-
-                // Check if user is logged in
-                let token = localStorage.getItem('accessToken');
-                if (!token) {
-                    showLoginPrompt();
-                    return;
-                }
-
-                try {
-                    // Build the URL
-                    const url = limit === '0' ? 
-                        '/api/speedtest/history' : 
-                        `/api/speedtest/history?limit=${limit}`;
-
-                    // First attempt with current token
-                    let response = await fetchWithToken(url, token);
-                    
-                    // If unauthorized, try to refresh token once
-                    if (response.status === 401 && retry) {
-                        token = await refreshAccessToken();
-                        response = await fetchWithToken(url, token);
-                    }
-
-                    // Handle the response
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        throw new Error(errorData.error || 'Falha ao carregar histórico');
-                    }
-                    
-                    const tests = await response.json();
-                    
-                    // Display tests in table
-                    if (tests.length === 0) {
-                        historyBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhum teste encontrado</td></tr>';
-                        return;
-                    }
-                    
-                    // Show the tests and stats
-                    displayTests(tests);
-                    
-                } catch (error) {
-                    console.error('Error loading history:', error);
-                    if (error.message.includes('token') || error.message.includes('expired')) {
-                        if (retry) {
-                            // Try one more time after token refresh
-                            return loadHistory(false);
-                        }
-                        showLoginPrompt('Sessão expirada. Por favor, faça login novamente.');
-                    } else {
-                        historyBody.innerHTML = `
-                            <tr>
-                                <td colspan="6" style="text-align: center; color: #e74c3c;">
-                                    <i class="fas fa-exclamation-triangle"></i> Erro ao carregar histórico: ${error.message}
-                                </td>
-                            </tr>`;
-                    }
-                } finally {
-                    loadingDiv.style.display = 'none';
-                }
-            };
-            
-            // Helper function to show login prompt
-            const showLoginPrompt = (message = 'Por favor, faça login para visualizar o histórico.') => {
-                historyBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" style="text-align: center; color: #e74c3c; padding: 20px;">
-                            <i class="fas fa-exclamation-circle"></i> ${message}
-                            <div style="margin-top: 20px;">
-                                <a href="/login" class="history-button" style="display: inline-flex; padding: 8px 20px; font-size: 0.9em;">
-                                    <i class="fas fa-sign-in-alt"></i> Ir para Login
-                                </a>
-                            </div>
-                        </td>
-                    </tr>`;
-                loadingDiv.style.display = 'none';
-            };
-            
-            // Helper function to fetch with token
-            const fetchWithToken = async (url, token) => {
-                return await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
+                
+                const response = await fetch(`/api/speedtest/history?limit=${limit}`, {
                     credentials: 'include'
                 });
-            };
-            
-            // Function to display tests in the table
-            function displayTests(tests) {
-                // Ensure all numeric values are properly formatted
-                const formatNumericValue = (value) => {
-                    if (value === null || value === undefined) return 'N/A';
-                    const num = parseFloat(value);
-                    return isNaN(num) ? 'N/A' : num.toFixed(2);
-                };
-
-                // Display tests in table
-                historyBody.innerHTML = tests.map(test => `
-                    <tr>
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar o histórico: ' + response.status);
+                }
+                
+                const tests = await response.json();
+                
+                if (!Array.isArray(tests) || tests.length === 0) {
+                    historyBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2rem;">
+                                <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.5; margin-bottom: 1rem;"></i>
+                                <p>Nenhum teste encontrado</p>
+                            </td>
+                        </tr>`;
+                    return;
+                }
+                
+                tests.forEach(test => {
+                    if (!test) return;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
                         <td>${formatDate(test.testDate)}</td>
                         <td>${formatSpeed(test.downloadSpeed)}</td>
                         <td>${formatSpeed(test.uploadSpeed)}</td>
-                        <td>${formatNumericValue(test.ping)}</td>
-                        <td>${test.jitter ? formatNumericValue(test.jitter) : 'N/A'}</td>
+                        <td>${formatPing(test.ping)}</td>
+                        <td>${formatPing(test.jitter)}</td>
                         <td>${test.serverName || 'N/A'}</td>
-                    </tr>
-                `).join('');
-                
-                // Calculate and display statistics
-                const stats = calculateStats(tests);
-                displayStats(stats);
-            };
-
-            // Event listeners
-            loadBtn.addEventListener('click', loadHistory);
-            limitSelect.addEventListener('change', loadHistory);
-
-            // Initial load
-            loadHistory();
-
-            // Calculate statistics from test results
-            const calculateStats = (tests) => {
-                if (tests.length === 0) return {};
-
-                const stats = {
-                    count: tests.length,
-                    avgDownload: 0,
-                    avgUpload: 0,
-                    avgPing: 0,
-                    maxDownload: -Infinity,
-                    maxUpload: -Infinity,
-                    minPing: Infinity
-                };
-
-                let totalDownload = 0;
-                let totalUpload = 0;
-                let totalPing = 0;
-
-                tests.forEach(test => {
-                    totalDownload += parseFloat(test.downloadSpeed);
-                    totalUpload += parseFloat(test.uploadSpeed);
-                    totalPing += parseFloat(test.ping);
-
-                    if (test.downloadSpeed > stats.maxDownload) stats.maxDownload = test.downloadSpeed;
-                    if (test.uploadSpeed > stats.maxUpload) stats.maxUpload = test.uploadSpeed;
-                    if (test.ping < stats.minPing) stats.minPing = test.ping;
+                    `;
+                    historyBody.appendChild(row);
                 });
+                
+            } catch (error) {
+                console.error('Erro ao carregar histórico:', error);
+                if (historyBody) {
+                    historyBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--error-color); padding: 2rem;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Erro ao carregar o histórico. Tente novamente.</p>
+                                <button onclick="loadHistory()" class="btn" style="margin-top: 1rem;">
+                                    <i class="fas fa-sync"></i> Tentar novamente
+                                </button>
+                                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                                    ${error.message || 'Erro desconhecido'}
+                                </p>
+                            </td>
+                        </tr>`;
+                }
+            } finally {
+                if (loadingDiv) {
+                    loadingDiv.style.display = 'none';
+                }
+            }
+        }
+        
+        // Função para verificar a autenticação com o servidor
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/check', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Falha na verificação de autenticação');
+                }
+                
+                const data = await response.json();
+                return !!data.authenticated;
+            } catch (error) {
+                console.error('Erro ao verificar autenticação:', error);
+                return false;
+            }
+        }
 
-                stats.avgDownload = totalDownload / tests.length;
-                stats.avgUpload = totalUpload / tests.length;
-                stats.avgPing = totalPing / tests.length;
-
-                return stats;
-            };
-
-            // Display statistics
-            const displayStats = (stats) => {
-                if (!stats || stats.count === 0) return;
-
-                statsContainer.innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-label">Média Download</div>
-                        <div class="stat-value">${formatSpeed(stats.avgDownload)} <small>Mbps</small></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Média Upload</div>
-                        <div class="stat-value">${formatSpeed(stats.avgUpload)} <small>Mbps</small></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Média Ping</div>
-                        <div class="stat-value">${formatSpeed(stats.avgPing)} <small>ms</small></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Melhor Download</div>
-                        <div class="stat-value">${formatSpeed(stats.maxDownload)} <small>Mbps</small></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Melhor Upload</div>
-                        <div class="stat-value">${formatSpeed(stats.maxUpload)} <small>Mbps</small></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Menor Ping</div>
-                        <div class="stat-value">${formatSpeed(stats.minPing)} <small>ms</small></div>
-                    </div>
-                `;
-            };
-
-            // Event listeners
-            loadBtn.addEventListener('click', loadHistory);
-            limitSelect.addEventListener('change', loadHistory);
-
-            // Load initial data
-            loadHistory();
+        // Inicialização da página
+        document.addEventListener('DOMContentLoaded', async () => {
+            const authRequired = document.getElementById('authRequired');
+            const authenticatedContent = document.getElementById('authenticatedContent');
+            const loadHistoryBtn = document.getElementById('loadHistory');
+            const limitSelect = document.getElementById('limitSelect');
+            
+            if (!authRequired || !authenticatedContent || !loadHistoryBtn || !limitSelect) {
+                console.error('Elementos necessários não encontrados no DOM');
+                return;
+            }
+            
+            // Mostra o estado de carregamento
+            authRequired.style.display = 'none';
+            authenticatedContent.style.display = 'none';
+            
+            try {
+                // Verifica autenticação
+                const isAuthenticated = await checkAuth();
+                
+                if (!isAuthenticated) {
+                    authRequired.style.display = 'flex';
+                    return;
+                }
+                
+                // Se autenticado, mostra o conteúdo e carrega o histórico
+                authenticatedContent.style.display = 'block';
+                
+                // Event listeners
+                loadHistoryBtn.addEventListener('click', loadHistory);
+                limitSelect.addEventListener('change', loadHistory);
+                
+                // Carrega o histórico inicial
+                await loadHistory();
+            } catch (error) {
+                console.error('Erro na inicialização:', error);
+                if (authRequired) {
+                    authRequired.style.display = 'flex';
+                    const alertContent = authRequired.querySelector('.alert-content');
+                    if (alertContent) {
+                        alertContent.innerHTML = `
+                            <p>Ocorreu um erro ao carregar a página. Por favor, tente recarregar.</p>
+                            <div style="margin-top: 1rem;">
+                                <button onclick="window.location.reload()" class="btn">
+                                    <i class="fas fa-sync"></i> Recarregar Página
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            }
         });
     </script>
 </body>

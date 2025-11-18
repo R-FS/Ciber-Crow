@@ -78,11 +78,16 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const redirectTo = req.query.redirect || '/';
 
         // Buscar usuário pelo email
         const users = await query('SELECT * FROM users WHERE email = ?', [email]);
         if (users.length === 0) {
-            return res.status(401).json({ error: 'Credenciais inválidas' });
+            if (req.accepts('json')) {
+                return res.status(401).json({ error: 'Credenciais inválidas' });
+            }
+            req.flash('error', 'Credenciais inválidas');
+            return res.redirect(`/login?redirect=${encodeURIComponent(redirectTo)}`);
         }
 
         const user = users[0];
@@ -90,23 +95,56 @@ const login = async (req, res) => {
         // Verificar a senha
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ error: 'Credenciais inválidas' });
+            if (req.accepts('json')) {
+                return res.status(401).json({ error: 'Credenciais inválidas' });
+            }
+            req.flash('error', 'Credenciais inválidas');
+            return res.redirect(`/login?redirect=${encodeURIComponent(redirectTo)}`);
         }
 
         // Gerar tokens
-        const userData = { id: user.id, username: user.username, email: user.email };
+        const userData = { 
+            id: user.id, 
+            username: user.username, 
+            email: user.email 
+        };
+        
         const accessToken = generateAccessToken(userData);
         const refreshToken = await generateRefreshToken(userData);
 
-        res.json({
-            user: userData,
-            accessToken,
-            refreshToken
+        // Define o token em um cookie HTTP-only seguro
+        res.cookie('token', accessToken, { 
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000, // 1 dia
+            path: '/'
         });
 
+        // Se for uma requisição AJAX/JSON, retorna os dados
+        if (req.accepts('json')) {
+            return res.json({
+                user: userData,
+                accessToken,
+                refreshToken
+            });
+        }
+
+        // Se for um formulário de login normal, redireciona
+        res.redirect(redirectTo);
+
     } catch (error) {
-        console.error('Erro ao processar login');
-        res.status(500).json({ error: 'Erro ao processar o login' });
+        console.error('Erro ao processar login:', error);
+        
+        if (req.accepts('json')) {
+            return res.status(500).json({ 
+                error: 'Erro ao processar o login',
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+        
+        req.flash('error', 'Ocorreu um erro ao processar seu login. Por favor, tente novamente.');
+        res.redirect('/login');
     }
 };
 
@@ -230,10 +268,20 @@ const getProfile = async (req, res) => {
     }
 };
 
+// Verifica se o usuário está autenticado
+const checkAuth = (req, res) => {
+    // Se chegou até aqui, o middleware de autenticação já verificou o token
+    res.json({ 
+        authenticated: true,
+        user: req.user
+    });
+};
+
 module.exports = {
     register,
     login,
     refreshToken,
     logout,
-    getProfile
+    getProfile,
+    checkAuth
 };

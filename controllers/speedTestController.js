@@ -55,10 +55,27 @@ const saveTestResult = async (req, res) => {
 
 // Get user's test history
 const getTestHistory = async (req, res) => {
+    console.log('Fetching test history for user:', req.user);
+    
+    if (!req.user || !req.user.id) {
+        console.error('No user ID found in request');
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const userId = req.user.id;
+    const limit = parseInt(req.query.limit) || 10; // Default to 10 results
+    
     try {
-        const userId = req.user.id;
-        const limit = parseInt(req.query.limit) || 0; // 0 means no limit
+        console.log(`Fetching up to ${limit} test results for user ${userId}`);
         
+        // First, verify the user exists
+        const userCheck = await query('SELECT id FROM users WHERE id = ?', [userId]);
+        if (userCheck.length === 0) {
+            console.error(`User with ID ${userId} not found`);
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+        
+        // Build the query
         let queryStr = `
             SELECT 
                 id, 
@@ -75,21 +92,39 @@ const getTestHistory = async (req, res) => {
             
         const params = [userId];
         
-        // Add LIMIT only if it's greater than 0
+        // Add LIMIT if specified
         if (limit > 0) {
             queryStr += ' LIMIT ?';
             params.push(limit);
         }
         
+        console.log('Executing query:', queryStr, 'with params:', params);
+        
         const tests = await query(queryStr, params);
+        console.log(`Found ${tests.length} test results`);
+        
+        // Format dates to ISO string for consistency
+        const formattedTests = tests.map(test => ({
+            ...test,
+            testDate: test.testDate ? new Date(test.testDate).toISOString() : null
+        }));
 
-        res.json(tests);
+        return res.json(formattedTests);
 
     } catch (error) {
-        console.error('Error fetching test history:', error);
+        console.error('Error fetching test history:', {
+            message: error.message,
+            stack: error.stack,
+            userId,
+            limit
+        });
+        
         res.status(500).json({ 
-            error: 'Failed to fetch test history',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: 'Falha ao carregar o histórico de testes',
+            ...(process.env.NODE_ENV === 'development' && { 
+                details: error.message,
+                stack: error.stack
+            })
         });
     }
 };

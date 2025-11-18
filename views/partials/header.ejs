@@ -1,3 +1,6 @@
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <nav class="navbar">
     <div class="navbar-container">
         <div class="logo-container">
@@ -19,47 +22,74 @@
             </a>
         </div>
         <div class="nav-links" id="auth-buttons">
-            <a href="/login" id="login-button" class="<%= typeof isAuthenticated !== 'undefined' && isAuthenticated ? 'd-none' : '' %>">
+            <a href="/login" id="login-button" style="<%= typeof isAuthenticated !== 'undefined' && isAuthenticated ? 'display: none;' : '' %>">
                 <i class="fas fa-sign-in-alt"></i> Login
             </a>
-            <div id="user-menu" class="<%= typeof isAuthenticated === 'undefined' || !isAuthenticated ? 'd-none' : '' %>">
-                <div class="dropdown">
-                    <button class="btn btn-link nav-link dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-user-circle"></i> <span id="username-display">Conta</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="/perfil"><i class="fas fa-user"></i> Perfil</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" id="logout-button"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
-                    </ul>
+            <div id="user-menu" style="position: relative; display: <%= typeof isAuthenticated !== 'undefined' && isAuthenticated ? 'inline-block' : 'none' %>;">
+                <button id="userDropdown" style="background: none; border: none; color: #fff; cursor: pointer; padding: 5px 10px;">
+                    <i class="fas fa-user-circle" style="font-size: 24px;"></i>
+                    <span id="username-display" style="margin-left: 5px;">Conta</span>
+                    <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
+                </button>
+                <div id="dropdownContent" style="display: none; position: absolute; right: 0; background: #2c3e50; min-width: 200px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; border-radius: 4px; padding: 10px 0;">
+                    <div style="padding: 10px 15px; border-bottom: 1px solid #34495e;">
+                        <div id="dropdown-username" style="font-weight: bold;">Usuário</div>
+                        <small id="dropdown-email" style="color: #95a5a6;">user@example.com</small>
+                    </div>
+                    <a href="/perfil" style="display: block; padding: 8px 15px; color: #ecf0f1; text-decoration: none;">
+                        <i class="fas fa-user" style="width: 20px; margin-right: 10px;"></i>Meu Perfil
+                    </a>
+                    <a href="/configuracoes" style="display: block; padding: 8px 15px; color: #ecf0f1; text-decoration: none;">
+                        <i class="fas fa-cog" style="width: 20px; margin-right: 10px;"></i>Configurações
+                    </a>
+                    <a href="#" id="logout-button" style="display: block; padding: 8px 15px; color: #e74c3c; text-decoration: none;">
+                        <i class="fas fa-sign-out-alt" style="width: 20px; margin-right: 10px;"></i>Sair
+                    </a>
                 </div>
             </div>
         </div>
         
-        <style>
-            .d-none { display: none !important; }
-            .dropdown-menu { min-width: 200px; }
-            .dropdown-item { padding: 0.5rem 1.5rem; }
-            .dropdown-item i { width: 20px; margin-right: 10px; }
-            #user-menu { display: inline-block; }
-            #userDropdown { color: #fff; text-decoration: none; padding: 0.5rem 0.5rem; }
-            #userDropdown:hover { color: #ccc; }
-        </style>
+        
         
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const loginButton = document.getElementById('login-button');
                 const userMenu = document.getElementById('user-menu');
+                const dropdownButton = document.getElementById('userDropdown');
+                const dropdownContent = document.getElementById('dropdownContent');
                 const logoutButton = document.getElementById('logout-button');
                 const usernameDisplay = document.getElementById('username-display');
                 
+                // Toggle do dropdown
+                if (dropdownButton && dropdownContent) {
+                    dropdownButton.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+
+                // Fechar dropdown ao clicar fora
+                document.addEventListener('click', function() {
+                    if (dropdownContent) {
+                        dropdownContent.style.display = 'none';
+                    }
+                });
+
                 // Verificar se o usuário está autenticado
                 const user = localStorage.getItem('user');
                 if (user) {
                     const userData = JSON.parse(user);
-                    if (loginButton) loginButton.classList.add('d-none');
-                    if (userMenu) userMenu.classList.remove('d-none');
+                    if (loginButton) loginButton.style.display = 'none';
+                    if (userMenu) userMenu.style.display = 'inline-block';
+                    
+                    // Atualizar informações do usuário
                     if (usernameDisplay) usernameDisplay.textContent = userData.username || 'Conta';
+                    
+                    const dropdownUsername = document.getElementById('dropdown-username');
+                    const dropdownEmail = document.getElementById('dropdown-email');
+                    
+                    if (dropdownUsername) dropdownUsername.textContent = userData.username || 'Usuário';
+                    if (dropdownEmail) dropdownEmail.textContent = userData.email || '';
                 }
                 
                 // Logout
@@ -95,6 +125,8 @@
                 }
             });
         </script>
-
+                </div>
+            </div>
+        </div>
     </div>
 </nav>
