@@ -433,36 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Atualiza a interface com os resultados
             await updateResults(testResults);
             
-            // Tenta salvar os resultados se o usuário estiver autenticado
-            const saveResult = await saveTestResults(testResults);
-            
-            if (saveResult.requiresLogin) {
-                // Mostra mensagem que o teste não foi salvo por falta de autenticação
-                const saveStatus = document.createElement('div');
-                saveStatus.className = 'save-status';
-                saveStatus.innerHTML = `
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <div>
-                            <p>Faça <a href="/login?redirect=${encodeURIComponent(window.location.pathname)}" class="alert-link">login</a> para salvar seus resultados no histórico.</p>
-                            <small>Você pode fazer o teste sem salvar.</small>
-                        </div>
-                    </div>
-                `;
-                resultsDiv.appendChild(saveStatus);
-            } else if (!saveResult.success) {
-                // Mostra mensagem de erro ao salvar
-                const saveStatus = document.createElement('div');
-                saveStatus.className = 'save-status';
-                saveStatus.innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p>Não foi possível salvar os resultados: ${saveResult.message || 'Erro desconhecido'}</p>
-                    </div>
-                `;
-                resultsDiv.appendChild(saveStatus);
-            }
-            
+                        
         } catch (error) {
             console.error('Erro no teste de velocidade:', error);
             resultsDiv.innerHTML = `
