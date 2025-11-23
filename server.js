@@ -5,7 +5,18 @@ const os = require('os');
 const cors = require('cors');
 const SpeedTest = require('fast-speedtest-api');
 const cookieParser = require('cookie-parser');
+const http = require('http');
+const { Server } = require("socket.io");
+const networkController = require('./controllers/networkController');
+
 const app = express();
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        methods: ["GET", "POST"]
+    }
+});
 const port = process.env.PORT || 3000;
 
 // Importar rotas e middlewares
@@ -116,6 +127,13 @@ app.get('/login', (req, res) => {
     });
 });
 
+app.get('/network-monitoring', (req, res) => {
+    res.render('network-monitoring', {
+        title: 'Monitoramento de Rede - Ciber Crow',
+        description: 'Monitore a velocidade da sua rede e os dispositivos conectados.'
+    });
+});
+
 // Rota para informações da rede
 app.get('/api/network', (req, res) => {
     res.json({
@@ -212,10 +230,18 @@ app.get('/api/speedtest', async (req, res) => {
     }
 });
 
-// Servir o frontend
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Middleware para tratar rotas não encontradas (404)
+app.use((req, res, next) => {
+    res.status(404).render('404', {
+        title: 'Página Não Encontrada',
+        description: 'A página que você está procurando não existe.'
+    });
 });
+
+// Tratamento de erros
+// Socket.IO connection for Network Monitoring
+const networkSocket = io.of('/network-monitoring');
+networkSocket.on('connection', networkController.handleConnection);
 
 // Tratamento de erros
 app.use((err, req, res, next) => {
@@ -226,7 +252,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(port, '0.0.0.0', () => {
+httpServer.listen(port, '0.0.0.0', () => {
     console.log(`Servidor rodando em http://localhost:${port}`);
     console.log('Endereços de rede disponíveis:');
     getNetworkInfo().forEach(iface => {

@@ -17,33 +17,44 @@
             <a href="/" class="nav-service <%= currentPath === '/' ? 'active' : '' %>">
                 <i class="fas fa-tachometer-alt"></i> Crow Speed
             </a>
-            <a href="/security" class="nav-service <%= currentPath === '/security' ? 'active' : '' %>">
-                <i class="fas fa-shield-alt"></i> Crow Security
-            </a>
+            <div class="dropdown">
+                <% const isSecuritySection = currentPath === '/security' || currentPath === '/network-monitoring' %>
+                <a href="#" class="nav-service dropdown-toggle <%= isSecuritySection ? 'active' : '' %>">
+                    <i class="fas fa-shield-alt"></i> Crow Security <i class="fas fa-caret-down"></i>
+                </a>
+                <div class="dropdown-menu">
+                    <a href="/security" class="<%= currentPath === '/security' ? 'active' : '' %>">
+                        <i class="fas fa-shield-alt"></i> Security Dashboard
+                    </a>
+                    <a href="/network-monitoring" class="<%= currentPath === '/network-monitoring' ? 'active' : '' %>">
+                        <i class="fas fa-network-wired"></i> Network Monitoring
+                    </a>
+                </div>
+            </div>
         </div>
         <div class="nav-links" id="auth-buttons">
-            <a href="/login" id="login-button" style="<%= typeof isAuthenticated !== 'undefined' && isAuthenticated ? 'display: none;' : '' %>">
+            <a href="/login" id="login-button" class="<%= typeof isAuthenticated !== 'undefined' && isAuthenticated ? 'hidden' : '' %>">
                 <i class="fas fa-sign-in-alt"></i> Login
             </a>
-            <div id="user-menu" style="position: relative; display: <%= typeof isAuthenticated !== 'undefined' && isAuthenticated ? 'inline-block' : 'none' %>;">
-                <button id="userDropdown" style="background: none; border: none; color: #fff; cursor: pointer; padding: 5px 10px;">
-                    <i class="fas fa-user-circle" style="font-size: 24px;"></i>
-                    <span id="username-display" style="margin-left: 5px;">Conta</span>
-                    <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
+            <div id="user-menu" class="<%= typeof isAuthenticated !== 'undefined' && isAuthenticated ? 'visible' : '' %>">
+                <button id="userDropdown" class="user-dropdown-button">
+                    <i class="fas fa-user-circle user-dropdown-icon"></i>
+                    <span id="username-display" class="user-dropdown-text">Conta</span>
+                    <i class="fas fa-caret-down user-dropdown-caret"></i>
                 </button>
-                <div id="dropdownContent" style="display: none; position: absolute; right: 0; background: #2c3e50; min-width: 200px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; border-radius: 4px; padding: 10px 0;">
-                    <div style="padding: 10px 15px; border-bottom: 1px solid #34495e;">
-                        <div id="dropdown-username" style="font-weight: bold;">Usuário</div>
-                        <small id="dropdown-email" style="color: #95a5a6;">user@example.com</small>
+                <div id="dropdownContent" class="user-dropdown">
+                    <div class="user-dropdown-header">
+                        <div id="dropdown-username" class="user-dropdown-username">Usuário</div>
+                        <small id="dropdown-email" class="user-dropdown-email">user@example.com</small>
                     </div>
-                    <a href="/perfil" style="display: block; padding: 8px 15px; color: #ecf0f1; text-decoration: none;">
-                        <i class="fas fa-user" style="width: 20px; margin-right: 10px;"></i>Meu Perfil
+                    <a href="/perfil" class="user-dropdown-link">
+                        <i class="fas fa-user"></i>Meu Perfil
                     </a>
-                    <a href="/configuracoes" style="display: block; padding: 8px 15px; color: #ecf0f1; text-decoration: none;">
-                        <i class="fas fa-cog" style="width: 20px; margin-right: 10px;"></i>Configurações
+                    <a href="/configuracoes" class="user-dropdown-link">
+                        <i class="fas fa-cog"></i>Configurações
                     </a>
-                    <a href="#" id="logout-button" style="display: block; padding: 8px 15px; color: #e74c3c; text-decoration: none;">
-                        <i class="fas fa-sign-out-alt" style="width: 20px; margin-right: 10px;"></i>Sair
+                    <a href="#" id="logout-button" class="user-dropdown-link logout">
+                        <i class="fas fa-sign-out-alt"></i>Sair
                     </a>
                 </div>
             </div>
@@ -64,14 +75,14 @@
                 if (dropdownButton && dropdownContent) {
                     dropdownButton.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+                        dropdownContent.classList.toggle('visible');
                     });
                 }
 
                 // Fechar dropdown ao clicar fora
                 document.addEventListener('click', function() {
-                    if (dropdownContent) {
-                        dropdownContent.style.display = 'none';
+                    if (dropdownContent && dropdownContent.classList.contains('visible')) {
+                        dropdownContent.classList.remove('visible');
                     }
                 });
 
@@ -79,11 +90,11 @@
                 const user = localStorage.getItem('user');
                 if (user) {
                     const userData = JSON.parse(user);
-                    if (loginButton) loginButton.style.display = 'none';
-                    if (userMenu) userMenu.style.display = 'inline-block';
                     
                     // Atualizar informações do usuário
-                    if (usernameDisplay) usernameDisplay.textContent = userData.username || 'Conta';
+                    if (usernameDisplay) {
+                        usernameDisplay.textContent = userData.username || 'Conta';
+                    }
                     
                     const dropdownUsername = document.getElementById('dropdown-username');
                     const dropdownEmail = document.getElementById('dropdown-email');
@@ -125,8 +136,5 @@
                 }
             });
         </script>
-                </div>
-            </div>
-        </div>
     </div>
 </nav>
