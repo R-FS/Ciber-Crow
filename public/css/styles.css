@@ -1078,6 +1078,32 @@ h1 {
     width: 100%;
 }
 
+.not-found-container {
+    text-align: center;
+    padding: 4rem 1rem;
+}
+.not-found-container h1 {
+    font-size: 5rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+.not-found-container p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+}
+.not-found-container .home-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    border: 1px solid var(--primary-color);
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--border-radius-md);
+    transition: var(--transition-default);
+}
+.not-found-container .home-link:hover {
+    background-color: var(--primary-color);
+    color: var(--background-dark);
+}
+
 /* Responsividade do footer */
 @media (min-width: 768px) {
     .footer-content {
