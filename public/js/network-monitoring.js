@@ -9,10 +9,119 @@ document.addEventListener('DOMContentLoaded', function () {
     const sigmaContainer = document.getElementById('sigma-container');
     let sigmaInstance = null;
 
+    // Speed chart variables
+    let speedChart;
+    const maxDataPoints = 10;
+    const speedData = {
+        labels: Array(maxDataPoints).fill(''),
+        download: Array(maxDataPoints).fill(null),
+        upload: Array(maxDataPoints).fill(null)
+    };
+
+    // Initialize the speed chart
+    function initSpeedChart() {
+        const ctx = document.getElementById('speedChart').getContext('2d');
+        
+        speedChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: speedData.labels,
+                datasets: [
+                    {
+                        label: 'Download',
+                        data: speedData.download,
+                        borderColor: '#3b82f6', // Blue
+                        borderWidth: 2,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 3
+                    },
+                    {
+                        label: 'Upload',
+                        data: speedData.upload,
+                        borderColor: '#ef4444', // Red
+                        borderWidth: 2,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 0
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw?.toFixed(2) || '0.00'} Mbps`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        display: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            display: true,
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            callback: function(value) {
+                                return value > 0 ? value + ' Mbps' : '';
+                            }
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Update the speed chart with new data
+    function updateSpeedChart(download, upload) {
+        // Shift existing data
+        speedData.download.shift();
+        speedData.upload.shift();
+        
+        // Add new data
+        speedData.download.push(download);
+        speedData.upload.push(upload);
+        
+        // Update chart
+        if (speedChart) {
+            speedChart.data.datasets[0].data = speedData.download;
+            speedChart.data.datasets[1].data = speedData.upload;
+            speedChart.update('none');
+        }
+    }
+
+    // Initialize the chart when the page loads
+    initSpeedChart();
+
     // Handle network speed updates
     socket.on('network-speed', (data) => {
         if (speedDisplay && data.speed) {
             speedDisplay.textContent = `${data.speed.toFixed(2)} Mbps`;
+            
+            // Update the chart with new speed data
+            // If upload speed is not provided, use 30% of download speed as a fallback
+            const downloadSpeed = parseFloat(data.speed);
+            const uploadSpeed = data.uploadSpeed || (data.speed * 0.3);
+            
+            updateSpeedChart(downloadSpeed, uploadSpeed);
         }
     });
 
