@@ -102,11 +102,16 @@ const login = async (req, res) => {
             return res.redirect(`/login?redirect=${encodeURIComponent(redirectTo)}`);
         }
 
+        // Verificar se o usuário é admin (assumindo que há uma coluna 'is_admin' na tabela users)
+        // Se não existir, você precisará adicionar essa coluna
+        const isAdmin = user.is_admin === 1 || user.is_admin === true;
+
         // Gerar tokens
         const userData = { 
             id: user.id, 
             username: user.username, 
-            email: user.email 
+            email: user.email,
+            isAdmin: isAdmin
         };
         
         const accessToken = generateAccessToken(userData);
