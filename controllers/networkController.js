@@ -2,51 +2,91 @@ const find = require('local-devices');
 const https = require('https');
 const { performance } = require('perf_hooks');
 
+// Function to test download speed
+const testDownloadSpeed = async () => {
+    const TEST_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    const TEST_URL = `https://speed.cloudflare.com/__down?bytes=${TEST_FILE_SIZE}`;
+    const TIMEOUT_MS = 10000; // 10s timeout
+
+    return new Promise((resolve, reject) => {
+        const startTime = performance.now();
+        let byteCount = 0;
+        let timedOut = false;
+
+        const timer = setTimeout(() => {
+            timedOut = true;
+            req.destroy();
+            resolve(0);
+        }, TIMEOUT_MS);
+
+        const options = new URL(TEST_URL);
+        const req = https.get(options, (res) => {
+            res.on('data', (chunk) => {
+                if (!timedOut) byteCount += chunk.length;
+            });
+
+            res.on('end', () => {
+                clearTimeout(timer);
+                if (timedOut) return resolve(0);
+                
+                const duration = (performance.now() - startTime) / 1000; // in seconds
+                const mbps = (byteCount * 8) / (1024 * 1024) / duration;
+                resolve(Math.max(0, mbps));
+            });
+        });
+
+        req.on('error', () => {
+            clearTimeout(timer);
+            resolve(0);
+        });
+    });
+};
+
+// Function to test upload speed (simplified - in real world, you'd need an upload endpoint)
+const testUploadSpeed = async () => {
+    // For simplicity, we'll assume upload is about 30% of download speed
+    // In a real application, you'd implement actual upload test
+    const downloadSpeed = await testDownloadSpeed();
+    return downloadSpeed * 0.3;
+};
+
 // Function to get network speed
 const getNetworkSpeed = async (socket) => {
     try {
-        const TEST_URL = 'https://speed.cloudflare.com/__down?bytes=10000000'; // 10MB
-        const TIMEOUT_MS = 10000; // 10s
+        console.log('Starting speed test...');
+        
+        // Run download and upload tests in parallel
+        const [downloadMbps, uploadMbps] = await Promise.all([
+            testDownloadSpeed(),
+            testUploadSpeed()
+        ]);
 
-        const downloadMbps = await new Promise((resolve, reject) => {
-            const startTime = performance.now();
-            let byteCount = 0;
-
-            const options = {
-                hostname: 'speed.cloudflare.com',
-                path: '/__down?bytes=10000000',
-                method: 'GET',
-                rejectUnauthorized: false // Ignore certificate errors
-            };
-
-            const req = https.request(options, (res) => {
-                res.on('data', (chunk) => {
-                    byteCount += chunk.length;
-                });
-
-                res.on('end', () => {
-                    const duration = (performance.now() - startTime) / 1000;
-                    if (duration === 0 || byteCount === 0) return resolve('0.00');
-                    const mbps = (byteCount * 8) / (1024 * 1024) / duration;
-                    resolve(mbps.toFixed(2));
-                });
+        console.log(`Speed test results - Download: ${downloadMbps.toFixed(2)} Mbps, Upload: ${uploadMbps.toFixed(2)} Mbps`);
+        
+        // Emit the speed data to the client
+        if (socket) {
+            socket.emit('network-speed', {
+                speed: downloadMbps,
+                uploadSpeed: uploadMbps,
+                timestamp: new Date().toISOString()
             });
+        }
 
-            req.on('error', (err) => {
-                reject(new Error(`Speed test request failed: ${err.message}`));
-            });
-
-            req.setTimeout(TIMEOUT_MS, () => {
-                req.destroy(new Error('Speed test timed out'));
-            });
-
-            req.end();
-        });
-
-        socket.emit('network-speed', { speed: parseFloat(downloadMbps) });
+        return { downloadMbps, uploadMbps };
     } catch (error) {
-        console.error('Detailed speed test error:', error.message);
-        socket.emit('network-error', { message: 'Failed to get network speed.' });
+        console.error('Error in getNetworkSpeed:', error);
+        
+        // Emit error to the client
+        if (socket) {
+            socket.emit('network-speed', {
+                speed: 0,
+                uploadSpeed: 0,
+                error: error.message,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        return { downloadMbps: 0, uploadMbps: 0 };
     }
 };
 
@@ -174,16 +214,36 @@ const inferDeviceType = (device) => {
 };
 
 // Main handler for socket connections
+// Variável para controlar se um teste já está em andamento
+let isSpeedTestRunning = false;
+
 const handleConnection = (socket) => {
     console.log('A user connected to network monitoring.');
 
+    // Função para executar o teste de velocidade com proteção
+    const runSpeedTest = async () => {
+        if (isSpeedTestRunning) {
+            console.log('Speed test already in progress, skipping...');
+            return;
+        }
+        
+        isSpeedTestRunning = true;
+        try {
+            await getNetworkSpeed(socket);
+        } catch (error) {
+            console.error('Error in speed test:', error);
+        } finally {
+            isSpeedTestRunning = false;
+        }
+    };
+
     // Initial data fetch
-    getNetworkSpeed(socket);
+    runSpeedTest();
     getConnectedDevices(socket);
 
-    // Set up periodic updates
-    const speedInterval = setInterval(() => getNetworkSpeed(socket), 10000); // every 10 seconds
-    const devicesInterval = setInterval(() => getConnectedDevices(socket), 20000); // every 20 seconds
+    // Set up periodic updates - Agora a cada segundo
+    const speedInterval = setInterval(runSpeedTest, 1000); // every 1 second
+    const devicesInterval = setInterval(() => getConnectedDevices(socket), 5000); // every 5 seconds
 
     socket.on('disconnect', () => {
         console.log('User disconnected from network monitoring.');

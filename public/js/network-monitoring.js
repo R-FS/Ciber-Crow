@@ -22,26 +22,31 @@ document.addEventListener('DOMContentLoaded', function () {
     function initSpeedChart() {
         const ctx = document.getElementById('speedChart').getContext('2d');
         
+        // Initialize with some default data points to make lines visible
+        const initialData = Array(maxDataPoints).fill(0);
+        
         speedChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: speedData.labels,
+                labels: Array(maxDataPoints).fill(''),
                 datasets: [
                     {
                         label: 'Download',
-                        data: speedData.download,
+                        data: [...initialData],
                         borderColor: '#3b82f6', // Blue
                         borderWidth: 2,
-                        tension: 0.3,
+                        tension: 0.1,
+                        fill: false,
                         pointRadius: 0,
                         pointHoverRadius: 3
                     },
                     {
                         label: 'Upload',
-                        data: speedData.upload,
+                        data: [...initialData],
                         borderColor: '#ef4444', // Red
                         borderWidth: 2,
-                        tension: 0.3,
+                        tension: 0.1,
+                        fill: false,
                         pointRadius: 0,
                         pointHoverRadius: 3
                     }
@@ -62,29 +67,62 @@ document.addEventListener('DOMContentLoaded', function () {
                         intersect: false,
                         callbacks: {
                             label: function(context) {
-                                return `${context.dataset.label}: ${context.raw?.toFixed(2) || '0.00'} Mbps`;
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += context.parsed.y.toFixed(2) + ' Mbps';
+                                return label;
                             }
                         }
                     }
                 },
                 scales: {
                     x: {
-                        display: false
-                    },
-                    y: {
-                        display: true,
+                        display: false,
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            display: false
                         },
                         ticks: {
-                            display: true,
-                            color: 'rgba(255, 255, 255, 0.6)',
-                            callback: function(value) {
-                                return value > 0 ? value + ' Mbps' : '';
-                            }
+                            display: false
+                        }
+                    },
+                    y: {
+                        display: false,
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            display: false,
+                            drawBorder: false
                         },
-                        beginAtZero: true
+                        ticks: {
+                            display: false
+                        }
                     }
+                },
+                elements: {
+                    line: {
+                        borderWidth: 1.5,
+                        tension: 0.6,  // Aumentado para mais suavidade
+                        borderJoinStyle: 'round',
+                        borderCapStyle: 'round',
+                        cubicInterpolationMode: 'monotone'  // Melhor interpolação para dados de série temporal
+                    },
+                    point: {
+                        radius: 0,
+                        hitRadius: 10,  // Área maior para interação
+                        hoverRadius: 3  // Tamanho ao passar o mouse
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                layout: {
+                    padding: 0
+                },
+                plugins: {
+                    legend: false
                 }
             }
         });
@@ -92,19 +130,47 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Update the speed chart with new data
     function updateSpeedChart(download, upload) {
-        // Shift existing data
-        speedData.download.shift();
-        speedData.upload.shift();
-        
-        // Add new data
-        speedData.download.push(download);
-        speedData.upload.push(upload);
-        
-        // Update chart
-        if (speedChart) {
-            speedChart.data.datasets[0].data = speedData.download;
-            speedChart.data.datasets[1].data = speedData.upload;
-            speedChart.update('none');
+        try {
+            // Ensure we have valid numbers
+            const downloadValue = Number.isFinite(download) ? download : 0;
+            const uploadValue = Number.isFinite(upload) ? upload : 0;
+            
+            // Shift existing data
+            speedData.download.shift();
+            speedData.upload.shift();
+            
+            // Add new data
+            speedData.download.push(downloadValue);
+            speedData.upload.push(uploadValue);
+            
+            // Update chart if it exists
+            if (speedChart) {
+                // Update the datasets with new data
+                speedChart.data.datasets[0].data = [...speedData.download];
+                speedChart.data.datasets[1].data = [...speedData.upload];
+                
+                // Calculate max value for Y-axis scaling
+                const allValues = [...speedData.download, ...speedData.upload].filter(Number.isFinite);
+                const maxValue = allValues.length > 0 ? Math.max(...allValues) : 10;
+                
+                // Set Y-axis max with some padding (minimum 10 Mbps)
+                const maxY = Math.max(Math.ceil(maxValue * 1.2 / 10) * 10, 10);
+                
+                // Update chart options
+                speedChart.options.scales.y.max = maxY;
+                speedChart.options.scales.y.min = 0;
+                
+                // Force update the chart
+                speedChart.update({
+                    duration: 500,
+                    easing: 'easeOutQuart',
+                    lazy: false
+                });
+                
+                console.log('Chart updated with:', { download: downloadValue, upload: uploadValue });
+            }
+        } catch (error) {
+            console.error('Error updating speed chart:', error);
         }
     }
 
@@ -113,16 +179,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Handle network speed updates
     socket.on('network-speed', (data) => {
-        if (speedDisplay && data.speed) {
-            speedDisplay.textContent = `${data.speed.toFixed(2)} Mbps`;
+        console.log('Received speed data:', data);
+        
+        if (data.error) {
+            console.error('Speed test error:', data.error);
+            return;
+        }
+
+        if (speedDisplay) {
+            const speed = parseFloat(data.speed || 0);
+            speedDisplay.textContent = `${speed.toFixed(2)} Mbps`;
             
             // Update the chart with new speed data
-            // If upload speed is not provided, use 30% of download speed as a fallback
-            const downloadSpeed = parseFloat(data.speed);
-            const uploadSpeed = data.uploadSpeed || (data.speed * 0.3);
+            const downloadSpeed = speed;
+            const uploadSpeed = data.uploadSpeed ? parseFloat(data.uploadSpeed) : (speed * 0.3);
             
             updateSpeedChart(downloadSpeed, uploadSpeed);
         }
+    });
+
+    // Handle network errors
+    socket.on('network-error', (error) => {
+        console.error('Network monitoring error:', error.message);
+        // You could show an error message to the user here if desired
     });
 
     // Handle connected devices updates

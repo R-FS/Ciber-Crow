@@ -39,4 +39,19 @@ router.get('/profile', authenticateToken, authController.getProfile);
 // Rota para verificar autenticação
 router.get('/check', authenticateToken, authController.checkAuth);
 
+// Rotas de administração
+router.get('/users', authenticateToken, (req, res, next) => {
+    if (!req.user.is_admin) {
+        return res.status(403).json({ error: 'Acesso não autorizado' });
+    }
+    next();
+}, authController.getAllUsers);
+
+router.get('/manage-users', authenticateToken, (req, res, next) => {
+    if (!req.user.is_admin) {
+        return res.status(403).render('error', { message: 'Acesso não autorizado' });
+    }
+    next();
+}, authController.renderUserManagement);
+
 module.exports = router;

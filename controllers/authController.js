@@ -281,11 +281,37 @@ const checkAuth = (req, res) => {
     });
 };
 
+// Get all users (admin only)
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await query('SELECT id, username, email, is_admin, created_at FROM users ORDER BY created_at DESC');
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Error fetching users' });
+    }
+};
+
+// Render user management page (admin only)
+const renderUserManagement = async (req, res) => {
+    try {
+        res.render('admin/userManager', { 
+            title: 'Gestão de Utilizadores',
+            user: req.user
+        });
+    } catch (error) {
+        console.error('Error rendering user management page:', error);
+        res.status(500).render('error', { message: 'Error loading user management page' });
+    }
+};
+
 module.exports = {
     register,
     login,
     refreshToken,
     logout,
     getProfile,
-    checkAuth
+    checkAuth,
+    getAllUsers,
+    renderUserManagement
 };
