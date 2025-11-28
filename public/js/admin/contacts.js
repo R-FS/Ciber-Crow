@@ -79,11 +79,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add messages to their respective columns
             messages.forEach(message => {
                 const status = message.status || 'unread';
-                const column = document.getElementById(`${status.replace('-', '')}-column`);
+                const columnId = `${status}-column`; // Matches the HTML IDs: unread-column, in-progress-column, resolved-column
+                const column = document.getElementById(columnId);
                 
                 if (column) {
                     const messageElement = createMessageElement(message);
                     column.appendChild(messageElement);
+                } else {
+                    console.warn(`Column not found for status: ${status} (tried ID: ${columnId})`);
                 }
             });
             
@@ -139,8 +142,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update action buttons based on current status
         const status = message.status || 'unread';
-        markInProgressBtn.style.display = status === 'unread' ? 'block' : 'none';
-        markResolvedBtn.style.display = status !== 'resolved' ? 'block' : 'none';
+        
+        // Show mark as in progress button if message is unread or resolved
+        markInProgressBtn.style.display = (status === 'unread' || status === 'resolved') ? 'block' : 'none';
+        
+        // Show mark as resolved button if message is unread or in progress
+        markResolvedBtn.style.display = (status === 'unread' || status === 'in-progress') ? 'block' : 'none';
         
         modal.style.display = 'block';
     }
@@ -149,29 +156,40 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!currentMessageId) return;
         
         try {
-            await updateMessageStatus(currentMessageId, newStatus);
             modal.style.display = 'none';
-            loadMessages();
+            await updateMessageStatus(currentMessageId, newStatus);
+            // Note: loadMessages() is now called inside updateMessageStatus
         } catch (error) {
             console.error('Error updating message status:', error);
             alert('Erro ao atualizar o status da mensagem. Tente novamente.');
+            // Reload messages to restore consistent state
+            loadMessages();
         }
     }
     
     async function updateMessageStatus(messageId, status) {
-        const response = await fetch(`/api/contacts/${messageId}/status`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to update message status');
+        try {
+            const response = await fetch(`/api/contacts/${messageId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status })
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.message || 'Failed to update message status');
+            }
+            
+            // Force a complete refresh of the messages to ensure consistency
+            await loadMessages();
+            return result;
+        } catch (error) {
+            console.error('Error in updateMessageStatus:', error);
+            throw error; // Re-throw to be caught by the calling function
         }
-        
-        return response.json();
     }
     
     async function deleteMessage(messageId) {

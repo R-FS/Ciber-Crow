@@ -15,7 +15,8 @@ router.delete('/api/contacts/:id', authenticateToken, isAdmin, contactController
 router.get('/admin', authenticateToken, isAdmin, (req, res) => {
     res.render('admin', { 
         title: 'Painel de Administração',
-        user: req.user
+        user: req.user,
+        basePath: '/admin' // Add base path for static files
     });
 });
 

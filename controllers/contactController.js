@@ -1,74 +1,67 @@
-// Armazenamento em memória (temporário)
-let contacts = [];
+// Armazenamento em banco de dados
+const { query } = require('../db/database');
 
 // Obter a próxima ID disponível
-const getNextId = () => (contacts.length > 0 
-    ? Math.max(...contacts.map(c => parseInt(c.id))) + 1 
-    : 1).toString();
+const getNextId = async () => {
+    const result = await query('SELECT MAX(id) as max_id FROM contacts');
+    const maxId = result[0].max_id;
+    return (maxId > 0 ? maxId + 1 : 1).toString();
+};
 
-// Salvar mensagem de contato (em memória)
-exports.submitContactForm = (req, res) => {
+// Salvar mensagem de contato
+exports.submitContactForm = async (req, res) => {
     try {
         const { name, email, subject, message } = req.body;
         
         // Validação básica
         if (!name || !email || !subject || !message) {
-            return res.status(400).json({ success: false, message: 'Todos os campos são obrigatórios' });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Todos os campos são obrigatórios' 
+            });
         }
-
-        // Adicionar novo contato ao array em memória
-        const newContact = {
-            id: getNextId(),
-            name,
-            email,
-            subject,
-            message,
-            status: 'unread', // Novo campo para controle de status
-            date: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
         
-        contacts.push(newContact);
-        console.log('Nova mensagem de contato recebida:', newContact);
+        const result = await query(
+            'INSERT INTO contacts (name, email, subject, message) VALUES (?, ?, ?, ?)',
+            [name, email, subject, message]
+        );
         
-        res.status(200).json({ 
+        const [newMessage] = await query('SELECT * FROM contacts WHERE id = ?', [result.insertId]);
+        
+        res.status(201).json({ 
             success: true, 
             message: 'Mensagem enviada com sucesso!',
-            data: newContact
+            data: newMessage
         });
     } catch (error) {
-        console.error('Erro ao processar formulário de contato:', error);
+        console.error('Erro ao enviar mensagem:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Erro ao processar o formulário' 
+            message: 'Erro ao processar a mensagem' 
         });
     }
 };
 
 // Obter todas as mensagens
-exports.getAllContacts = (req, res) => {
+exports.getAllContacts = async (req, res) => {
     try {
-        // Ordena por data de atualização (mais recentes primeiro)
-        const sortedContacts = [...contacts].sort((a, b) => 
-            new Date(b.updatedAt || b.date) - new Date(a.updatedAt || a.date)
-        );
-        
+        const messages = await query('SELECT * FROM contacts ORDER BY created_at DESC');
         res.status(200).json({ 
             success: true, 
-            count: contacts.length,
-            data: sortedContacts
+            count: messages.length,
+            data: messages 
         });
     } catch (error) {
         console.error('Erro ao buscar mensagens:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Erro ao carregar as mensagens' 
+            message: 'Erro ao buscar as mensagens' 
         });
     }
 };
 
 // Atualizar status de uma mensagem
-exports.updateMessageStatus = (req, res) => {
+exports.updateMessageStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -80,25 +73,19 @@ exports.updateMessageStatus = (req, res) => {
             });
         }
         
-        const messageIndex = contacts.findIndex(m => m.id === id);
+        await query('UPDATE contacts SET status = ? WHERE id = ?', [status, id]);
+        const [updatedMessage] = await query('SELECT * FROM contacts WHERE id = ?', [id]);
         
-        if (messageIndex === -1) {
+        if (!updatedMessage) {
             return res.status(404).json({ 
                 success: false, 
                 message: 'Mensagem não encontrada' 
             });
         }
         
-        // Atualiza o status e a data de atualização
-        contacts[messageIndex] = {
-            ...contacts[messageIndex],
-            status,
-            updatedAt: new Date().toISOString()
-        };
-        
         res.status(200).json({ 
             success: true, 
-            data: contacts[messageIndex]
+            data: updatedMessage
         });
     } catch (error) {
         console.error('Erro ao atualizar status da mensagem:', error);
@@ -110,14 +97,12 @@ exports.updateMessageStatus = (req, res) => {
 };
 
 // Excluir uma mensagem
-exports.deleteMessage = (req, res) => {
+exports.deleteMessage = async (req, res) => {
     try {
         const { id } = req.params;
-        const initialLength = contacts.length;
+        const result = await query('DELETE FROM contacts WHERE id = ?', [id]);
         
-        contacts = contacts.filter(message => message.id !== id);
-        
-        if (contacts.length === initialLength) {
+        if (result.affectedRows === 0) {
             return res.status(404).json({ 
                 success: false, 
                 message: 'Mensagem não encontrada' 
@@ -126,7 +111,7 @@ exports.deleteMessage = (req, res) => {
         
         res.status(200).json({ 
             success: true, 
-            message: 'Mensagem excluída com sucesso'
+            message: 'Mensagem excluída com sucesso' 
         });
     } catch (error) {
         console.error('Erro ao excluir mensagem:', error);

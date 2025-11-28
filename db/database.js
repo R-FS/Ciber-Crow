@@ -43,6 +43,19 @@ async function createTables(connection) {
         await connection.query('CREATE DATABASE IF NOT EXISTS `cibercrow`');
         await connection.query('USE `cibercrow`');
         
+        // Tabela de contatos
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS contacts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) NOT NULL,
+                subject VARCHAR(200) NOT NULL,
+                message TEXT NOT NULL,
+                status ENUM('unread', 'in-progress', 'resolved') DEFAULT 'unread',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )`);
+
         // Tabela de usuários
         await connection.query(`
             CREATE TABLE IF NOT EXISTS users (
