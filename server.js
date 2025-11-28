@@ -98,39 +98,70 @@ app.get('/test-history', authenticateToken, (req, res) => {
     });
 });
 
+// Middleware para verificar autenticação
+const checkAuth = (req, res, next) => {
+    // Verifica se há um token JWT nos cookies
+    const token = req.cookies.token;
+    res.locals.isAuthenticated = !!token;
+    next();
+};
+
+// Aplicar o middleware de verificação de autenticação em todas as rotas
+app.use(checkAuth);
+
 // Rotas de visualização
 app.get('/', (req, res) => {
+    // Se estiver fazendo logout, limpa os cookies
+    if (req.query.logout === 'true') {
+        res.clearCookie('token');
+        res.clearCookie('refreshToken');
+        // Redireciona para limpar a URL
+        return res.redirect('/');
+    }
+
     res.render('index', { 
         title: 'Teste de Velocidade - Ciber Crow',
-        description: 'Teste a velocidade da sua conexão de internet de forma rápida e confiável.'
+        description: 'Teste a velocidade da sua conexão de internet de forma rápida e confiável.',
+        isAuthenticated: res.locals.isAuthenticated,
+        user: req.user || null
     });
 });
 
 app.get('/sobre', (req, res) => {
     res.render('sobre', { 
         title: 'Sobre - Ciber Crow',
-        description: 'Saiba mais sobre o nosso serviço de teste de velocidade.'
+        description: 'Saiba mais sobre o nosso serviço de teste de velocidade.',
+        isAuthenticated: res.locals.isAuthenticated,
+        user: req.user || null
     });
 });
 
 app.get('/contato', (req, res) => {
     res.render('contato', { 
         title: 'Contato - Ciber Crow',
-        description: 'Entre em contato conosco para mais informações.'
+        description: 'Entre em contato conosco para mais informações.',
+        isAuthenticated: res.locals.isAuthenticated,
+        user: req.user || null
     });
 });
 
 app.get('/login', (req, res) => {
+    if (res.locals.isAuthenticated) {
+        return res.redirect('/');
+    }
     res.render('login', { 
         title: 'Login - Ciber Crow',
-        description: 'Acesse sua conta ou crie uma nova.'
+        description: 'Acesse sua conta ou crie uma nova.',
+        isAuthenticated: false
     });
 });
 
 app.get('/network-monitoring', (req, res) => {
     res.render('network-monitoring', {
         title: 'Monitoramento de Rede - Ciber Crow',
-        description: 'Monitore a velocidade da sua rede e os dispositivos conectados.'
+        description: 'Monitore a velocidade da sua rede e os dispositivos conectados.',
+        isAuthenticated: res.locals.isAuthenticated,
+        user: req.user || null
     });
 });
 

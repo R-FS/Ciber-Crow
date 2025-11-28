@@ -17,12 +17,12 @@
             <a href="/" class="nav-service <%= currentPath === '/' ? 'active' : '' %>">
                 <i class="fas fa-tachometer-alt"></i> Crow Speed
             </a>
-            <div class="dropdown">
+            <div class="security-dropdown">
                 <% const isSecuritySection = currentPath === '/security' || currentPath === '/network-monitoring' %>
-                <a href="#" class="nav-service dropdown-toggle <%= isSecuritySection ? 'active' : '' %>">
+                <a href="#" class="nav-service security-dropdown-toggle <%= isSecuritySection ? 'active' : '' %>">
                     <i class="fas fa-shield-alt"></i> Crow Security <i class="fas fa-caret-down"></i>
                 </a>
-                <div class="dropdown-menu">
+                <div class="security-dropdown-menu">
                     <a href="/security" class="<%= currentPath === '/security' ? 'active' : '' %>">
                         <i class="fas fa-shield-alt"></i> Security Dashboard
                     </a>
@@ -32,11 +32,11 @@
                 </div>
             </div>
         </div>
-        <div class="nav-links" id="auth-buttons">
-            <a href="/login" id="login-button" class="<%= typeof isAuthenticated !== 'undefined' && isAuthenticated ? 'hidden' : '' %>">
-                <i class="fas fa-sign-in-alt"></i> Login
+        <div class="nav-links" id="auth-buttons" data-authenticated="<%= typeof isAuthenticated !== 'undefined' && isAuthenticated ? 'true' : 'false' %>">
+            <a href="/login" id="login-button">
+                <i class="fas fa-sign-in-alt"></i><span class="auth-text">Login</span>
             </a>
-            <div id="user-menu" class="<%= typeof isAuthenticated !== 'undefined' && isAuthenticated ? 'visible' : '' %>">
+            <div id="user-menu">
                 <button id="userDropdown" class="user-dropdown-button">
                     <i class="fas fa-user-circle user-dropdown-icon"></i>
                     <span id="username-display" class="user-dropdown-text">Conta</span>
@@ -54,7 +54,7 @@
                         <i class="fas fa-cog"></i>Configurações
                     </a>
                     <a href="#" id="logout-button" class="user-dropdown-link logout">
-                        <i class="fas fa-sign-out-alt"></i>Sair
+                        <i class="fas fa-sign-out-alt"></i><span class="auth-text">Sair</span>
                     </a>
                 </div>
             </div>
@@ -64,6 +64,7 @@
         
         <script>
             document.addEventListener('DOMContentLoaded', function() {
+                const authButtons = document.getElementById('auth-buttons');
                 const loginButton = document.getElementById('login-button');
                 const userMenu = document.getElementById('user-menu');
                 const dropdownButton = document.getElementById('userDropdown');
@@ -71,18 +72,28 @@
                 const logoutButton = document.getElementById('logout-button');
                 const usernameDisplay = document.getElementById('username-display');
                 
+                // Check if user is authenticated and show/hide elements accordingly
+                const isAuthenticated = authButtons.getAttribute('data-authenticated') === 'true';
+                if (isAuthenticated) {
+                    if (loginButton) loginButton.style.display = 'none';
+                    if (userMenu) userMenu.style.display = 'inline-block';
+                } else {
+                    if (loginButton) loginButton.style.display = 'inline-block';
+                    if (userMenu) userMenu.style.display = 'none';
+                }
+                
                 // Toggle do dropdown
                 if (dropdownButton && dropdownContent) {
                     dropdownButton.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        dropdownContent.classList.toggle('visible');
+                        dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
                     });
                 }
 
                 // Fechar dropdown ao clicar fora
                 document.addEventListener('click', function() {
-                    if (dropdownContent && dropdownContent.classList.contains('visible')) {
-                        dropdownContent.classList.remove('visible');
+                    if (dropdownContent && dropdownContent.style.display === 'block') {
+                        dropdownContent.style.display = 'none';
                     }
                 });
 
@@ -118,20 +129,61 @@
                             });
                             
                             if (response.ok) {
-                                // Limpar dados de autenticação
-                                localStorage.removeItem('accessToken');
-                                localStorage.removeItem('refreshToken');
-                                localStorage.removeItem('user');
+                                // Limpar todos os dados locais
+                                localStorage.clear();
+                                sessionStorage.clear();
                                 
-                                // Redirecionar para a página inicial
-                                window.location.href = '/';
+                                // Limpar cookies forçando expiração
+                                document.cookie = 'token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                                document.cookie = 'refreshToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                                
+                                // Forçar um hard refresh para garantir que todos os estados sejam limpos
+                                window.location.href = '/?logout=true';
                             } else {
                                 throw new Error('Falha ao fazer logout');
                             }
                         } catch (error) {
                             console.error('Erro ao fazer logout:', error);
-                            alert('Ocorreu um erro ao fazer logout. Por favor, tente novamente.');
+                            // Mesmo em caso de erro, tenta limpar os dados locais e redirecionar
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            window.location.href = '/';
                         }
+                    });
+                }
+
+                // Security Dropdown Toggle
+                const securityDropdown = document.querySelector('.security-dropdown');
+                const securityToggle = document.querySelector('.security-dropdown-toggle');
+                const securityMenu = document.querySelector('.security-dropdown-menu');
+
+                if (securityToggle && securityMenu) {
+                    // Toggle menu on click
+                    securityToggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const isOpen = securityMenu.style.display === 'block';
+                        securityMenu.style.display = isOpen ? 'none' : 'block';
+                        securityMenu.style.opacity = isOpen ? '0' : '1';
+                        securityMenu.style.transform = isOpen ? 'translateY(-10px)' : 'translateY(0)';
+                    });
+
+                    // Close menu when clicking outside
+                    document.addEventListener('click', function(e) {
+                        if (!securityDropdown.contains(e.target)) {
+                            securityMenu.style.display = 'none';
+                            securityMenu.style.opacity = '0';
+                            securityMenu.style.transform = 'translateY(-10px)';
+                        }
+                    });
+
+                    // Close menu when clicking on a menu item
+                    const menuItems = securityMenu.querySelectorAll('a');
+                    menuItems.forEach(item => {
+                        item.addEventListener('click', function() {
+                            securityMenu.style.display = 'none';
+                            securityMenu.style.opacity = '0';
+                            securityMenu.style.transform = 'translateY(-10px)';
+                        });
                     });
                 }
             });
