@@ -85,6 +85,8 @@ app.get('/perfil', authenticateToken, (req, res) => {
     // Você pode acessar os dados do usuário em req.user
     res.render('perfil', { 
         title: 'Meu Perfil',
+        description: 'Gerencie as configurações do seu perfil.',
+        isAuthenticated: true, // Garante que o cabeçalho mostre o menu do usuário
         user: req.user // O middleware já adiciona o usuário ao req
     });
 });
@@ -94,6 +96,7 @@ app.get('/test-history', authenticateToken, (req, res) => {
     res.render('test-history', { 
         title: 'Histórico de Testes - Ciber Crow',
         description: 'Visualize o histórico de testes de velocidade realizados.',
+        isAuthenticated: true, // Garante que o cabeçalho mostre o menu do usuário
         user: req.user // Passa os dados do usuário para a view
     });
 });
