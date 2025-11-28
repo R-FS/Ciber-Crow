@@ -80,17 +80,15 @@ const login = async (req, res) => {
         const { email, password } = req.body;
         const redirectTo = req.query.redirect || '/';
 
-        // Buscar usuário pelo email
-        const users = await query('SELECT * FROM users WHERE email = ?', [email]);
-        if (users.length === 0) {
+        // Verificar as credenciais do usuário
+        const [user] = await query('SELECT * FROM users WHERE email = ?', [email]);
+        if (!user) {
             if (req.accepts('json')) {
                 return res.status(401).json({ error: 'Credenciais inválidas' });
             }
             req.flash('error', 'Credenciais inválidas');
             return res.redirect(`/login?redirect=${encodeURIComponent(redirectTo)}`);
         }
-
-        const user = users[0];
 
         // Verificar a senha
         const isMatch = await bcrypt.compare(password, user.password);
@@ -101,17 +99,13 @@ const login = async (req, res) => {
             req.flash('error', 'Credenciais inválidas');
             return res.redirect(`/login?redirect=${encodeURIComponent(redirectTo)}`);
         }
-
-        // Verificar se o usuário é admin (assumindo que há uma coluna 'is_admin' na tabela users)
-        // Se não existir, você precisará adicionar essa coluna
-        const isAdmin = user.is_admin === 1 || user.is_admin === true;
-
-        // Gerar tokens
-        const userData = { 
-            id: user.id, 
-            username: user.username, 
+        
+        // Incluir is_admin no payload do token
+        const userData = {
+            id: user.id,
+            username: user.username,
             email: user.email,
-            isAdmin: isAdmin
+            isAdmin: user.is_admin === 1 || user.is_admin === true
         };
         
         const accessToken = generateAccessToken(userData);
@@ -122,14 +116,19 @@ const login = async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: 24 * 60 * 60 * 1000, // 1 dia
-            path: '/'
+            maxAge: 15 * 60 * 1000 // 15 minutos
         });
 
-        // Se for uma requisição AJAX/JSON, retorna os dados
+        // Responde com os tokens se for uma requisição de API
         if (req.accepts('json')) {
             return res.json({
-                user: userData,
+                message: 'Login bem-sucedido',
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    isAdmin: userData.isAdmin
+                },
                 accessToken,
                 refreshToken
             });

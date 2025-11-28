@@ -76,10 +76,12 @@ const getNetworkInfo = () => {
     return addresses;
 };
 
-// Rotas de API
+// Rotas de API que não requerem autenticação
 app.use('/api/auth', authRoutes);
-app.use('/api/speedtest', speedTestRoutes);
 app.use(contactRoutes); // Contact form routes
+
+// Rotas que requerem autenticação
+app.use('/api/speedtest', authenticateToken, speedTestRoutes);
 
 // Rota para a página de perfil (protegida)
 app.get('/perfil', authenticateToken, (req, res) => {
@@ -111,10 +113,23 @@ const checkAuth = (req, res, next) => {
     next();
 };
 
-// Aplicar o middleware de verificação de autenticação em todas as rotas
+// Rotas de visualização que não requerem autenticação
+app.get('/login', (req, res) => {
+    if (res.locals.isAuthenticated) {
+        return res.redirect('/');
+    }
+    res.render('login', { 
+        title: 'Login - Ciber Crow',
+        description: 'Acesse sua conta ou crie uma nova.',
+        isAuthenticated: false,
+        user: null
+    });
+});
+
+// Aplicar o middleware de verificação de autenticação nas demais rotas
 app.use(checkAuth);
 
-// Rotas de visualização
+// Rotas de visualização que requerem autenticação
 app.get('/', (req, res) => {
     // Se estiver fazendo logout, limpa os cookies
     if (req.query.logout === 'true') {
@@ -150,16 +165,6 @@ app.get('/contato', (req, res) => {
     });
 });
 
-app.get('/login', (req, res) => {
-    if (res.locals.isAuthenticated) {
-        return res.redirect('/');
-    }
-    res.render('login', { 
-        title: 'Login - Ciber Crow',
-        description: 'Acesse sua conta ou crie uma nova.',
-        isAuthenticated: false
-    });
-});
 
 app.get('/network-monitoring', (req, res) => {
     res.render('network-monitoring', {
@@ -270,7 +275,8 @@ app.get('/api/speedtest', async (req, res) => {
 app.use((req, res, next) => {
     res.status(404).render('404', {
         title: 'Página Não Encontrada',
-        description: 'A página que você está procurando não existe.'
+        description: 'A página que você está procurando não existe.',
+        user: req.user || null // Passa o usuário para a view, ou null se não estiver autenticado
     });
 });
 
@@ -281,10 +287,11 @@ networkSocket.on('connection', networkController.handleConnection);
 
 // Tratamento de erros
 app.use((err, req, res, next) => {
-    console.error('Erro:', err.stack);
-    res.status(500).json({ 
-        error: 'Algo deu errado!',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Erro interno do servidor'
+    console.error(err.stack);
+    res.status(500).render('500', {
+        title: 'Erro do Servidor',
+        message: 'Ocorreu um erro no servidor.',
+        user: req.user || null // Passa o usuário para a view, ou null se não estiver autenticado
     });
 });
 

@@ -50,9 +50,18 @@ async function createTables(connection) {
                 username VARCHAR(50) UNIQUE NOT NULL,
                 email VARCHAR(100) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
+                is_admin BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_is_admin (is_admin)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
+
+        // Adiciona a coluna is_admin se não existir (para bancos de dados existentes)
+        await connection.query(`
+            ALTER TABLE users 
+            ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE,
+            ADD INDEX IF NOT EXISTS idx_is_admin (is_admin);
         `);
 
         // Tabela de tokens de atualização

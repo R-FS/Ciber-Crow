@@ -74,11 +74,42 @@ const verifyRefreshToken = (req, res, next) => {
 };
 
 // Middleware para verificar se o usuário é administrador
-const isAdmin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
+const isAdmin = async (req, res, next) => {
+    try {
+        if (!req.user) {
+            if (req.path.startsWith('/api/')) {
+                return res.status(401).json({ error: 'Não autenticado' });
+            }
+            return res.redirect(`/login?redirect=${encodeURIComponent(req.originalUrl)}`);
+        }
+
+        // Busca o usuário no banco de dados para verificar se é admin
+        const [user] = await query('SELECT is_admin FROM users WHERE id = ?', [req.user.id]);
+        
+        if (!user || !user.is_admin) {
+            if (req.path.startsWith('/api/')) {
+                return res.status(403).json({ error: 'Acesso negado. Requer privilégios de administrador.' });
+            }
+            return res.status(403).render('403', { 
+                title: 'Acesso Negado', 
+                message: 'Você não tem permissão para acessar esta página.' 
+            });
+        }
+
+        // Atualiza o objeto do usuário na requisição
+        req.user.isAdmin = true;
+        res.locals.user = req.user;
+        
         next();
-    } else {
-        res.status(403).json({ error: 'Acesso negado: permissão de administrador necessária' });
+    } catch (error) {
+        console.error('Erro ao verificar permissões de administrador:', error);
+        if (req.path.startsWith('/api/')) {
+            return res.status(500).json({ error: 'Erro ao verificar permissões' });
+        }
+        res.status(500).render('500', { 
+            title: 'Erro do Servidor',
+            message: 'Ocorreu um erro ao verificar suas permissões.'
+        });
     }
 };
 
