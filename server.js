@@ -22,6 +22,7 @@ const port = process.env.PORT || 3000;
 // Importar rotas e middlewares
 const authRoutes = require('./routes/authRoutes');
 const speedTestRoutes = require('./routes/speedTestRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 const { authenticateToken } = require('./middleware/auth');
 
 // Configuração do EJS
@@ -78,6 +79,7 @@ const getNetworkInfo = () => {
 // Rotas de API
 app.use('/api/auth', authRoutes);
 app.use('/api/speedtest', speedTestRoutes);
+app.use(contactRoutes); // Contact form routes
 
 // Rota para a página de perfil (protegida)
 app.get('/perfil', authenticateToken, (req, res) => {

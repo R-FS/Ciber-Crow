@@ -47,6 +47,11 @@
                         <div id="dropdown-username" class="user-dropdown-username">Usuário</div>
                         <small id="dropdown-email" class="user-dropdown-email">user@example.com</small>
                     </div>
+                    <% if (user && user.isAdmin) { %>
+                    <a href="/admin" class="user-dropdown-link">
+                        <i class="fas fa-cog"></i> Painel Admin
+                    </a>
+                    <% } %>
                     <a href="/perfil" class="user-dropdown-link">
                         <i class="fas fa-user"></i>Meu Perfil
                     </a>
