@@ -130,6 +130,7 @@ app.get('/login', (req, res) => {
 app.use(checkAuth);
 
 // Rotas de visualização que requerem autenticação
+// Rota principal (nova página inicial)
 app.get('/', (req, res) => {
     // Se estiver fazendo logout, limpa os cookies
     if (req.query.logout === 'true') {
@@ -140,6 +141,16 @@ app.get('/', (req, res) => {
     }
 
     res.render('index', { 
+        title: 'Ciber Crow - Teste de Velocidade e Monitoramento de Rede',
+        description: 'Teste a velocidade da sua conexão de internet e monitore o desempenho da sua rede de forma rápida e confiável.',
+        isAuthenticated: res.locals.isAuthenticated,
+        user: req.user || null
+    });
+});
+
+// Rota para a página de teste de velocidade
+app.get('/speedtest', (req, res) => {
+    res.render('speedtest', { 
         title: 'Teste de Velocidade - Ciber Crow',
         description: 'Teste a velocidade da sua conexão de internet de forma rápida e confiável.',
         isAuthenticated: res.locals.isAuthenticated,
@@ -296,6 +307,19 @@ app.use((err, req, res, next) => {
 });
 
 httpServer.listen(port, '0.0.0.0', () => {
+    console.log(`
+ @@@@@@@  @@@ @@@  @@@@@@@   @@@@@@@@  @@@@@@@    @@@@@@@  @@@@@@@    @@@@@@   @@@  @@@  @@@  
+@@@@@@@@  @@@ @@@  @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@  @@@  @@@  
+!@@       @@! !@@  @@!  @@@  @@!       @@!  @@@  !@@       @@!  @@@  @@!  @@@  @@!  @@!  @@!  
+!@!       !@! @!!  !@   @!@  !@!       !@!  @!@  !@!       !@!  @!@  !@!  @!@  !@!  !@!  !@!  
+!@!        !@!@!   @!@!@!@   @!!!:!    @!@!!@!   !@!       @!@!!@!   @!@  !@!  @!!  !!@  @!@  
+!!!         @!!!   !!!@!!!!  !!!!!:    !!@!@!    !!!       !!@!@!    !@!  !!!  !@!  !!!  !@!  
+:!!         !!:    !!:  !!!  !!:       !!: :!!   :!!       !!: :!!   !!:  !!!  !!:  !!:  !!:  
+:!:         :!:    :!:  !:!  :!:       :!:  !:!  :!:       :!:  !:!  :!:  !:!  :!:  :!:  :!:  
+ ::: :::     ::     :: ::::   :: ::::  ::   :::   ::: :::  ::   :::  ::::: ::   :::: :: :::   
+ :: :: :     :     :: : ::   : :: ::    :   : :   :: :: :   :   : :   : :  :     :: :  : :    
+                                                                                              
+`);
     console.log(`Servidor rodando em http://localhost:${port}`);
     console.log('Endereços de rede disponíveis:');
     getNetworkInfo().forEach(iface => {

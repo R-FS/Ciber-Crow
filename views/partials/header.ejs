@@ -30,7 +30,7 @@
             <a href="/contato">Contato</a>
         </div>
         <div class="nav-links">
-            <a href="/" class="nav-service <%= currentPath === '/' ? 'active' : '' %>">
+            <a href="/speedtest" class="nav-service <%= currentPath === '/speedtest' ? 'active' : '' %>">
                 <i class="fas fa-tachometer-alt"></i> Crow Speed
             </a>
             <div class="security-dropdown">
@@ -80,9 +80,6 @@
                 </div>
             </div>
         </div>
-        
-        
-        
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const authButtons = document.getElementById('auth-buttons');
@@ -211,5 +208,6 @@
         </script>
     </div>
 </nav>
+        <div class="header-space" style="height: 40px;"></div>
 </body>
 </html>

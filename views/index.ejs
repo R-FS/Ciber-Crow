@@ -1,35 +1,99 @@
 <!DOCTYPE html>
 <html lang="pt">
-    <%- include('partials/head') %>
+<%- include('partials/head') %>
 <body>
     <%- include('partials/header') %>
     
+    <!-- Carrossel de Apresentação -->
+    <div class="presentation-carousel">
+        <div class="carousel-container">
+            <div class="carousel-slide">
+                <div class="video-container">
+                    <video autoplay muted loop playsinline class="presentation-video">
+                        <source src="/videos/presentation.mp4" type="video/mp4">
+                        Seu navegador não suporta o elemento de vídeo.
+                    </video>
+                    <div class="video-overlay">
+                        <h1>Bem-vindo ao Ciber Crow</h1>
+                        <p>Soluções em monitoramento e segurança de rede</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Adicione mais slides conforme necessário -->
+            <div class="carousel-slide">
+                <div class="slide-content slide-2">
+                    <h2>Monitoramento em Tempo Real</h2>
+                    <p>Acompanhe o desempenho da sua rede 24/7</p>
+                </div>
+            </div>
+            <div class="carousel-slide">
+                <div class="slide-content slide-3">
+                    <h2>Segurança Avançada</h2>
+                    <p>Proteção completa para sua infraestrutura de rede</p>
+                </div>
+            </div>
+        </div>
+        <div class="carousel-controls">
+            <button class="carousel-control prev">❮</button>
+            <button class="carousel-control next">❯</button>
+        </div>
+        <div class="carousel-dots"></div>
+    </div>
+    
     <div class="container">
-        <div class="speed-test">
-            <h1>Teste de Velocidade</h1>
-            
-            <button id="startButton" class="test-button">
-                <i class="fas fa-play"></i>
-            </button>
-            <p class="button-label">Clique para começar o teste</p>
-            
-            <div id="testStatus" class="test-status" style="display: none;">
-                <i class="fas fa-spinner fa-spin"></i>
-                <span id="statusText">Testando sua conexão...</span>
+        <div class="features">
+            <div class="feature">
+                <i class="fas fa-bolt"></i>
+                <h3>Teste Rápido</h3>
+                <p>Verifique sua velocidade de download e upload em segundos.</p>
             </div>
-            
-            <div class="progress-container">
-                <div id="progressBar" class="progress-bar"></div>
+            <div class="feature">
+                <i class="fas fa-chart-line"></i>
+                <h3>Métricas Detalhadas</h3>
+                <p>Obtenha informações detalhadas sobre o desempenho da sua conexão.</p>
             </div>
-            
-            <div id="results" class="results">
-                <!-- Os resultados serão exibidos aqui -->
+            <div class="feature">
+                <i class="fas fa-history"></i>
+                <h3>Histórico</h3>
+                <p>Acompanhe seu histórico de testes e compare resultados.</p>
             </div>
         </div>
     </div>
 
     <%- include('partials/footer') %>
     
-    <script src="/js/script.js"></script>
+    <!-- Slick Carousel CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css"/>
+    
+    <!-- Slick Carousel JS -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+    
+    <script>
+        $(document).ready(function(){
+            $('.carousel-container').slick({
+                dots: true,
+                infinite: true,
+                speed: 500,
+                fade: true,
+                cssEase: 'linear',
+                autoplay: true,
+                autoplaySpeed: 5000,
+                prevArrow: $('.prev'),
+                nextArrow: $('.next'),
+                appendDots: $('.carousel-dots'),
+                responsive: [
+                    {
+                        breakpoint: 768,
+                        settings: {
+                            arrows: false,
+                            dots: true
+                        }
+                    }
+                ]
+            });
+        });
+    </script>
 </body>
 </html>

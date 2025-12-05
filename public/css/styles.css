@@ -489,12 +489,22 @@ body {
 }
 
 /* Conteúdo principal */
+main {
+    padding-top: 80px; /* Altura da navbar + um pouco de espaço */
+    min-height: calc(100vh - 80px); /* Garante que o conteúdo ocupe pelo menos a altura da viewport menos a altura da navbar */
+}
+
+/* Ajuste para o primeiro elemento dentro do container principal */
+.container > *:first-child {
+    padding-top: 1rem; /* Espaçamento adicional apenas para o primeiro elemento */
+}
 .container {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 7rem var(--spacing-md) var(--spacing-lg);
+    padding: 0 var(--spacing-md) var(--spacing-lg);
+    margin-top: 1rem;
 }
 
 .speed-test {
@@ -1645,6 +1655,236 @@ h1 {
     text-align: center;
 }
 
+/* Estilos da página inicial */
+.welcome-container {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.welcome-text {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.welcome-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+    border: 2px solid #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: #007bff;
+    border: 2px solid #007bff;
+}
+
+.btn-secondary:hover {
+    background-color: #f8f9fa;
+}
+
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.feature {
+    padding: 1.5rem;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    transition: transform 0.3s ease;
+}
+
+.feature:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.feature i {
+    font-size: 2rem;
+    color: #007bff;
+    margin-bottom: 1rem;
+}
+
+.feature h3 {
+    margin: 1rem 0;
+    color: #333;
+}
+
+.feature p {
+    color: #666;
+    line-height: 1.5;
+}
+
+/* Estilos do Carrossel */
+.presentation-carousel {
+    width: 100%;
+    position: relative;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.carousel-container {
+    width: 100%;
+}
+
+.carousel-slide {
+    position: relative;
+    height: 70vh;
+    min-height: 500px;
+    overflow: hidden;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.presentation-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+}
+
+.video-overlay, .slide-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.video-overlay h1, .slide-content h2 {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.video-overlay p, .slide-content p {
+    font-size: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.carousel-controls {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    transform: translateY(-50%);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.carousel-control {
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: white;
+    font-size: 2rem;
+    padding: 1rem;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: all 0.3s ease;
+}
+
+.carousel-control:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.carousel-dots {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    z-index: 10;
+}
+
+.slick-dots {
+    position: static;
+    margin: 0;
+    padding: 0;
+}
+
+.slick-dots li button:before {
+    color: white;
+    opacity: 0.5;
+    font-size: 10px;
+}
+
+.slick-dots li.slick-active button:before {
+    color: #007bff;
+    opacity: 1;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .carousel-slide {
+        height: 60vh;
+        min-height: 400px;
+    }
+    
+    .video-overlay h1, .slide-content h2 {
+        font-size: 2.5rem;
+    }
+    
+    .video-overlay p, .slide-content p {
+        font-size: 1.2rem;
+    }
+    
+    .welcome-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
 .history-header h1 {
     font-size: 2.2rem;
     color: var(--text-light);
@@ -1836,4 +2076,222 @@ h1 {
     .history-table td:not(:last-child)::after {
         display: none;
     }
+}
+
+/* Estilos do Carrossel */
+.presentation-carousel {
+    width: 100%;
+    position: relative;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.carousel-container {
+    width: 100%;
+}
+
+.carousel-slide {
+    position: relative;
+    height: 70vh;
+    min-height: 500px;
+    overflow: hidden;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.presentation-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+}
+
+.video-overlay, .slide-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.video-overlay h1, .slide-content h2 {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.video-overlay p, .slide-content p {
+    font-size: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Estilos para os slides de fundo */
+.slide-2 {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/images/slide2-bg.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+.slide-3 {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/images/slide3-bg.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+/* Controles do Carrossel */
+.carousel-controls {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    transform: translateY(-50%);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.carousel-control {
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: white;
+    font-size: 2rem;
+    padding: 1rem;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: all 0.3s ease;
+}
+
+.carousel-control:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.carousel-dots {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    z-index: 10;
+}
+
+.slick-dots {
+    position: static;
+    margin: 0;
+    padding: 0;
+}
+
+.slick-dots li button:before {
+    color: white;
+    opacity: 0.5;
+    font-size: 10px;
+}
+
+.slick-dots li.slick-active button:before {
+    color: var(--primary-color);
+    opacity: 1;
+}
+
+/* Estilos para as características */
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+}
+
+.feature {
+    padding: 2rem;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+}
+
+.feature:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.feature i {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+}
+
+.feature h3 {
+    color: var(--text-light);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.feature p {
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-size: 1rem;
+}
+
+/* Estilos responsivos para o carrossel */
+@media (max-width: 768px) {
+    .carousel-slide {
+        height: 60vh;
+        min-height: 400px;
+    }
+    
+    .video-overlay h1, .slide-content h2 {
+        font-size: 2.5rem;
+    }
+    
+    .video-overlay p, .slide-content p {
+        font-size: 1.2rem;
+    }
+    
+    .features {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Estilos para os slides de fundo do carrossel */
+.slide-2 {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/cyber-security.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 100%;
+    height: 100%;
+}
+
+.slide-3 {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/data-analysis.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 100%;
+    height: 100%;
+}
+
+/* Estilo para o vídeo de fundo */
+.video-container {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/network-monitoring.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
