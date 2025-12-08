@@ -20,7 +20,7 @@
                 <h2>Informações Pessoais</h2>
                 <form id="profileForm">
                     <div class="form-group">
-                        <label for="username">Nome de Usuário</label>
+                        <label for="username">Nome de Utilizador</label>
                         <input type="text" id="username" name="username" class="form-control" value="<%= user.username %>" required>
                     </div>
                     
@@ -132,12 +132,12 @@
                         
                         if (response.ok) {
                             alert('Perfil atualizado com sucesso!');
-                            // Atualiza os dados do usuário no localStorage
+                            // Atualiza os dados do utilizador no localStorage
                             const user = JSON.parse(localStorage.getItem('user'));
                             Object.assign(user, formData);
                             localStorage.setItem('user', JSON.stringify(user));
                             
-                            // Atualiza o nome de usuário no cabeçalho
+                            // Atualiza o nome de utilizador no cabeçalho
                             const usernameDisplay = document.querySelector('#username-display');
                             if (usernameDisplay) {
                                 usernameDisplay.textContent = user.username || 'Conta';

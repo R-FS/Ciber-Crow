@@ -46,14 +46,35 @@ app.use((req, res, next) => {
     next();
 });
 
-// Servir arquivos estáticos
-app.use(express.static(path.join(__dirname, 'public'), {
-    setHeaders: (res, path) => {
+// Configuração de arquivos estáticos
+const staticConfig = {
+    dotfiles: 'ignore',
+    etag: true,
+    extensions: ['jpg', 'jpeg', 'png', 'gif', 'svg', 'css', 'js', 'ico'],
+    index: false,
+    maxAge: '1d',
+    redirect: false,
+    setHeaders: function (res, path) {
+        res.set('x-timestamp', Date.now());
         if (path.endsWith('.js')) {
             res.set('Content-Type', 'application/javascript');
         }
     }
-}));
+};
+
+// Servir arquivos estáticos
+app.use(express.static(path.join(__dirname, 'public'), staticConfig));
+
+// Rota para verificar se os arquivos estáticos estão sendo servidos
+app.get('/test-image/:image', (req, res) => {
+    const imageName = req.params.image;
+    res.sendFile(path.join(__dirname, 'public', 'images', imageName), (err) => {
+        if (err) {
+            console.error('Erro ao enviar imagem:', err);
+            res.status(404).send('Imagem não encontrada');
+        }
+    });
+});
 
 // Obter endereços de rede
 const getNetworkInfo = () => {

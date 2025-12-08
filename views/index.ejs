@@ -7,35 +7,47 @@
     <!-- Carrossel de Apresentação -->
     <div class="presentation-carousel">
         <div class="carousel-container">
-            <div class="carousel-slide">
-                <div class="video-container">
-                    <video autoplay muted loop playsinline class="presentation-video">
-                        <source src="/videos/presentation.mp4" type="video/mp4">
-                        Seu navegador não suporta o elemento de vídeo.
-                    </video>
-                    <div class="video-overlay">
-                        <h1>Bem-vindo ao Ciber Crow</h1>
-                        <p>Soluções em monitoramento e segurança de rede</p>
+            <!-- Slide 1: Monitoramento de Rede -->
+            <div class="carousel-slide" style="background-image: url('/images/network-monitoring.jpg');">
+                <div class="slide-overlay"></div>
+                <div class="slide-content">
+                    <div class="slide-text">
+                        <h1>Monitoramento de Rede em Tempo Real</h1>
+                        <p>Acompanhe o desempenho da sua infraestrutura de TI 24 horas por dia, 7 dias por semana</p>
+                        <a href="/speedtest" class="btn btn-primary">Testar Agora</a>
                     </div>
                 </div>
             </div>
-            <!-- Adicione mais slides conforme necessário -->
-            <div class="carousel-slide">
-                <div class="slide-content slide-2">
-                    <h2>Monitoramento em Tempo Real</h2>
-                    <p>Acompanhe o desempenho da sua rede 24/7</p>
+            
+            <!-- Slide 2: Segurança Cibernética -->
+            <div class="carousel-slide" style="background-image: url('/images/cyber-security.jpg');">
+                <div class="slide-overlay"></div>
+                <div class="slide-content">
+                    <div class="slide-text">
+                        <h1>Segurança Avançada</h1>
+                        <p>Proteja seus dados e sistemas com nossas soluções de segurança de última geração</p>
+                        <a href="/contato" class="btn btn-primary">Solicitar Demonstração</a>
+                    </div>
                 </div>
             </div>
-            <div class="carousel-slide">
-                <div class="slide-content slide-3">
-                    <h2>Segurança Avançada</h2>
-                    <p>Proteção completa para sua infraestrutura de rede</p>
+            
+            <!-- Slide 3: Análise de Dados -->
+            <div class="carousel-slide" style="background-image: url('/images/data-analysis.jpg');">
+                <div class="slide-overlay"></div>
+                <div class="slide-content">
+                    <div class="slide-text">
+                        <h1>Análise de Dados Inteligente</h1>
+                        <p>Obtenha insights valiosos para tomar decisões estratégicas baseadas em dados</p>
+                        <a href="/sobre" class="btn btn-primary">Saiba Mais</a>
+                    </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Controles do Carrossel -->
         <div class="carousel-controls">
-            <button class="carousel-control prev">❮</button>
-            <button class="carousel-control next">❯</button>
+            <button class="carousel-control prev" aria-label="Slide Anterior">❮</button>
+            <button class="carousel-control next" aria-label="Próximo Slide">❯</button>
         </div>
         <div class="carousel-dots"></div>
     </div>
@@ -75,15 +87,26 @@
             $('.carousel-container').slick({
                 dots: true,
                 infinite: true,
-                speed: 500,
+                speed: 800,
                 fade: true,
-                cssEase: 'linear',
+                cssEase: 'cubic-bezier(0.7, 0, 0.3, 1)',
                 autoplay: true,
-                autoplaySpeed: 5000,
-                prevArrow: $('.prev'),
-                nextArrow: $('.next'),
+                autoplaySpeed: 6000,
+                pauseOnHover: false,
+                prevArrow: $('.carousel-control.prev'),
+                nextArrow: $('.carousel-control.next'),
                 appendDots: $('.carousel-dots'),
+                customPaging: function(slider, i) {
+                    return '<button type="button" data-role="none" role="button" tabindex="0"></button>';
+                },
                 responsive: [
+                    {
+                        breakpoint: 992,
+                        settings: {
+                            arrows: true,
+                            dots: true
+                        }
+                    },
                     {
                         breakpoint: 768,
                         settings: {
@@ -92,6 +115,13 @@
                         }
                     }
                 ]
+            });
+            
+            // Pausar o autoplay ao passar o mouse sobre o carrossel
+            $('.presentation-carousel').on('mouseenter', function() {
+                $('.carousel-container').slick('slickPause');
+            }).on('mouseleave', function() {
+                $('.carousel-container').slick('slickPlay');
             });
         });
     </script>
